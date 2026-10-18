@@ -70,8 +70,11 @@ jobs:
         working-directory: mobile
         continue-on-error: true
         run: |
-          node -r ./scripts/simulate-android.cjs -r ./backend/polyfills.js scripts/discover-mixes.test.cjs
-          node scripts/network-check.mjs "$RUNNER_TEMP/music" "$RUNNER_TEMP/package/bin/node"
+          set -o pipefail
+          {
+            node -r ./scripts/simulate-android.cjs -r ./backend/polyfills.js scripts/discover-mixes.test.cjs
+            node scripts/network-check.mjs "$RUNNER_TEMP/music" "$RUNNER_TEMP/package/bin/node"
+          } 2>&1 | tee "$GITHUB_WORKSPACE/network-report.txt"
 
       - name: Version
         run: |
@@ -133,3 +136,4 @@ jobs:
           # Replace the previous APKs.
           for old in $(gh release view android-latest --json assets -q '.assets[].name'); do gh release delete-asset android-latest "$old" -y; done
           gh release upload android-latest out/*.apk --clobber
+          if [ -f network-report.txt ]; then gh release upload android-latest network-report.txt --clobber; fi
