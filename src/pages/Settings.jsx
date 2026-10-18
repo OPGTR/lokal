@@ -13,6 +13,7 @@ import { peekCache, writeCache, usePageReady } from '../pageCache'
 import { useLibraryJobs, startLyricsIndex, cancelLyricsIndex, startGenres, readGenresStatus } from '../libraryJobs'
 import SectionSwap, { ReadyWhen } from '../components/SectionSwap'
 import AddonsSettings from '../components/AddonsSettings'
+import SpotiflacSync from '../components/SpotiflacSync'
 import ProviderConnections from '../components/ProviderConnections'
 import { DEFAULT_DISCORD_CLIENT_ID } from '../discord'
 import PlaybackSourceSettings from '../components/PlaybackSourceSettings'
@@ -1802,6 +1803,7 @@ activeCategory === 'data' ? usersTried
 
       {inCategory('addons') && (
       <Section title={t("Addons")}>
+        {api.isAndroid && <SpotiflacSync />}
         <AddonsSettings />
       </Section>
       )}

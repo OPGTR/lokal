@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../store/player'
 import TrackList from '../components/TrackList'
 import FadeImg from '../components/FadeImg'
+import SpotiflacSync from '../components/SpotiflacSync'
 import ScanBanner from '../components/ScanBanner'
 import LibraryFolderBrowser from '../components/LibraryFolderBrowser'
 import { api } from '../api'
@@ -311,6 +312,7 @@ export default function Library() {
       </div>
 
       <ScanBanner />
+      {api.isAndroid && <div className="mt-3"><SpotiflacSync /></div>}
 
       <div className="flex flex-col items-start gap-3">
         <div className="flex w-full flex-wrap items-center justify-between gap-3">

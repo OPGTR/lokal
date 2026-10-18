@@ -182,15 +182,41 @@ if (isAndroid) {
   post({ type: 'hello' })
 }
 
+// SpotiFLAC addon verification (a captcha, a sign-in): the desktop app opens
+// the page in a window of its own; here the app does, and hands back where it
+// ended and the cookies it set.
+const addonAuthListeners = new Set()
+function withAddonVerification(original) {
+  const verify = async (request) => {
+    const info = await original({ action: 'package.authInfo', key: request.key })
+    if (!info || info.error || !info.url) return info
+    const result = await callNative('addonAuth', { url: info.url, callback: info.callback, domains: info.domains })
+    const status = await original({ action: 'package.authComplete', key: request.key, url: result?.url || null, cookies: result?.cookies || [] })
+    for (const fn of addonAuthListeners) { try { fn({ key: request.key, ...(status || {}) }) } catch {} }
+    return status
+  }
+  return async (request) => {
+    if (request && ['package.verify', 'package.verifyAndWait', 'package.openAuth'].includes(request.action)) {
+      try { return await verify(request) } catch (e) { return { error: e.message } }
+    }
+    return original(request)
+  }
+}
+
 /** Android versions of the API calls that need the phone (see api.js). */
 export function androidApi(api) {
   if (!isAndroid) return api
+  const addonsPackages = api.addonsPackages
   return Object.assign(api, {
+    addonsPackages: withAddonVerification(addonsPackages),
+    onAddonAuthChanged: (fn) => { addonAuthListeners.add(fn); return () => addonAuthListeners.delete(fn) },
     openFolder: () => callNative('pickFolder').catch(() => null),
     openExternal: (url) => callNative('openUrl', String(url || '')).catch(() => window.open(url, '_blank')),
     relaunchApp: () => Promise.resolve(window.location.reload()),
     getVersion: () => callNative('appVersion').catch(() => ''),
     storageAccess: () => callNative('storageAccess'),
+    openApp: (pkg) => callNative('openApp', pkg),
+    appInstalled: (pkg) => callNative('appInstalled', pkg).catch(() => false),
     requestAllFilesAccess: () => callNative('requestAllFilesAccess'),
   })
 }

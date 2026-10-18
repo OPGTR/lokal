@@ -388,7 +388,7 @@ async function scanFolders(folderPaths = []) {
 async function scanFolder(folderPath, { saveRoot = true, watch = true } = {}) {
   const db = getDB()
   try { db.exec("ALTER TABLE tracks ADD COLUMN replaygain TEXT") } catch {}
-  scanStatus = { scanning: true, total: 0, done: 0, errors: 0, skipped: 0 }
+  scanStatus = { scanning: true, total: 0, done: 0, errors: 0, skipped: 0, added: 0, folder: path.resolve(folderPath) }
   try {
     const relinked = relinkArtistsIfNeeded(db)
     if (relinked) console.log(`[scanFolder] Re-linked artists for ${relinked} track(s)`)
@@ -436,6 +436,7 @@ async function scanFolder(folderPath, { saveRoot = true, watch = true } = {}) {
         updateTrackByPath.run(params)
       } else {
         insertTrack.run(params)
+        scanStatus.added = (scanStatus.added || 0) + 1
       }
       if (item.quality) quality.saveFields(db, trackId, item.quality, { fileChanged: true })
       db.prepare('DELETE FROM artist_track_links WHERE track_id = ?').run(trackId)
@@ -516,7 +517,7 @@ async function scanFolder(folderPath, { saveRoot = true, watch = true } = {}) {
     scanStatus.done++; emitProgress()
   }
   if (batch.length > 0) await insertBatch(batch)
-  scanStatus.scanning = false; emitProgress(true, true)
+  scanStatus.scanning = false; scanStatus.finishedAt = Date.now(); emitProgress(true, true)
   return scanStatus
 }
 

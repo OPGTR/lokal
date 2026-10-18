@@ -89,6 +89,12 @@ try {
   const full = await fetch(`${BASE}/api/stream/${encodeURIComponent(flac.id)}`)
   ok('FLAC streams', full.ok && /flac/.test(full.headers.get('content-type') || ''), full.headers.get('content-type'))
   await full.arrayBuffer()
+  const alac = byTitle['Something About Us']
+  if (alac) {
+    const res = await fetch(`${BASE}/api/stream/${encodeURIComponent(alac.id)}`)
+    const body = Buffer.from(await res.arrayBuffer())
+    ok('ALAC streams as FLAC (ffmpeg WebAssembly)', res.ok && /flac/.test(res.headers.get('content-type') || '') && body.subarray(0, 4).toString() === 'fLaC', `${res.status} ${res.headers.get('content-type')}`)
+  }
   const art = await fetch(`${BASE}/api/artwork/${encodeURIComponent(t.id)}`)
   ok('embedded cover art extracted', art.ok && /image/.test(art.headers.get('content-type') || ''), String(art.status))
   await art.arrayBuffer().catch(() => {})

@@ -173,17 +173,23 @@ export function wordSyncEnabled() {
 const scanWatchers = new Set()
 let scanPoll = null
 let scanWasRunning = false
+let lastScanFinished
 function pollWebScan() {
   if (scanPoll || !scanWatchers.size) return
   const tick = async () => {
     scanPoll = null
     const status = await apiFetch('/settings/scan-status').catch(() => null)
     if (status && !status.error) {
+      // A scan that ended since the last look (even one too quick to be seen
+      // running, like the Android app's background syncs) is reported once.
+      const finishedNew = lastScanFinished !== undefined && status.finishedAt && status.finishedAt !== lastScanFinished
+      if (lastScanFinished === undefined) lastScanFinished = status.finishedAt || null
       if (status.scanning) {
         scanWasRunning = true
         for (const fn of scanWatchers) { try { fn(status, status) } catch {} }
-      } else if (scanWasRunning) {
+      } else if (scanWasRunning || finishedNew) {
         scanWasRunning = false
+        lastScanFinished = status.finishedAt || lastScanFinished
         const done = { ...status, complete: true }
         for (const fn of scanWatchers) { try { fn(done, done) } catch {} }
       }

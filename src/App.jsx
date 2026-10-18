@@ -1295,6 +1295,9 @@ export default function App() {
         const dataUrl = await getArtworkDataURL(currentTrack.artwork_path)
         if (dataUrl) {
           artworkSrc = dataUrl
+        } else if (!api.isElectron) {
+          // Web mode / the Android app: the server's copy of the cover.
+          artworkSrc = api.artworkURL(currentTrack.id)
         }
       } else if (currentTrack.artwork_url) {
         artworkSrc = currentTrack.artwork_url

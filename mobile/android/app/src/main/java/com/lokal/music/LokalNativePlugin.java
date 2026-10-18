@@ -205,6 +205,68 @@ public class LokalNativePlugin extends Plugin {
         return path;
     }
 
+    /** A SpotiFLAC addon's verification page, in its own window (AddonAuthActivity). */
+    @PluginMethod
+    public void addonAuth(PluginCall call) {
+        String url = call.getString("url");
+        if (url == null || !url.startsWith("https://")) {
+            call.reject("No verification page");
+            return;
+        }
+        Intent intent = new Intent(getContext(), AddonAuthActivity.class);
+        intent.putExtra(AddonAuthActivity.EXTRA_URL, url);
+        intent.putExtra(AddonAuthActivity.EXTRA_CALLBACK, call.getString("callback"));
+        java.util.ArrayList<String> domains = new java.util.ArrayList<>();
+        try {
+            com.getcapacitor.JSArray list = call.getArray("domains");
+            if (list != null) for (Object d : list.toList()) domains.add(String.valueOf(d));
+        } catch (org.json.JSONException ignored) {}
+        intent.putStringArrayListExtra(AddonAuthActivity.EXTRA_DOMAINS, domains);
+        startActivityForResult(call, intent, "onAddonAuth");
+    }
+
+    @ActivityCallback
+    private void onAddonAuth(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        JSObject out = new JSObject();
+        Intent data = result.getData();
+        if (result.getResultCode() == android.app.Activity.RESULT_OK && data != null) {
+            out.put("url", data.getStringExtra(AddonAuthActivity.RESULT_URL));
+            try {
+                out.put("cookies", new com.getcapacitor.JSArray(data.getStringExtra(AddonAuthActivity.RESULT_COOKIES)));
+            } catch (org.json.JSONException e) {
+                out.put("cookies", new com.getcapacitor.JSArray());
+            }
+        } else {
+            out.put("url", null);
+            out.put("cookies", new com.getcapacitor.JSArray());
+        }
+        call.resolve(out);
+    }
+
+    /** Is this app installed (and visible: see <queries> in the manifest)? */
+    @PluginMethod
+    public void appInstalled(PluginCall call) {
+        String pkg = call.getString("package");
+        JSObject out = new JSObject();
+        out.put("installed", pkg != null && getContext().getPackageManager().getLaunchIntentForPackage(pkg) != null);
+        call.resolve(out);
+    }
+
+    /** Opens another app (the SpotiFLAC app, to download something). */
+    @PluginMethod
+    public void openApp(PluginCall call) {
+        String pkg = call.getString("package");
+        Intent intent = pkg == null ? null : getContext().getPackageManager().getLaunchIntentForPackage(pkg);
+        if (intent == null) {
+            call.reject("This app isn't installed");
+            return;
+        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(intent);
+        call.resolve();
+    }
+
     @PluginMethod
     public void openUrl(PluginCall call) {
         String url = call.getString("url");

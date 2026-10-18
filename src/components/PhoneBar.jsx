@@ -12,6 +12,7 @@ import { useTranslation } from '../i18n'
 import { trackArtURL } from '../onlineTracks'
 import { isStationTrack } from '../radio/stations'
 import Sidebar from './Sidebar'
+import { showToast } from './Toaster'
 
 function MiniPlayer() {
   const { t } = useTranslation()
@@ -73,6 +74,17 @@ export default function PhoneBar() {
   const nav = useNavigate()
   const loc = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+
+  // Songs that arrive by themselves (the SpotiFLAC sync, the start-up
+  // rescan): say so, and refresh the pages showing the library.
+  useEffect(() => {
+    if (!api.isAndroid) return undefined
+    return api.onScanProgress((progress) => {
+      if (!progress?.complete || !(progress.added > 0)) return
+      window.dispatchEvent(new Event('lokal:refresh'))
+      showToast(progress.added === 1 ? t('1 new song added to your library.') : t('{count} new songs added to your library.', { count: progress.added }))
+    })
+  }, [t])
 
   // Any navigation (a page picked in the menu) closes the menu.
   useEffect(() => { setMenuOpen(false) }, [loc.pathname])

@@ -24,6 +24,7 @@
     "@babel/plugin-transform-unicode-property-regex": "8.0.1",
     "@babel/plugin-transform-unicode-sets-regex": "8.0.1",
     "@capacitor/cli": "8.5.3",
+    "@ffmpeg/core": "^0.12.10",
     "esbuild": "0.28.2",
     "node-sqlite3-wasm": "0.8.61",
     "unorm": "1.6.0"

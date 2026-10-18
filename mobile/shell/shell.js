@@ -146,6 +146,16 @@ const nativeMethods = {
   async appVersion() { return (await App.getInfo()).version },
   async storageAccess() { return LokalNative.storageAccess() },
   async requestAllFilesAccess() { return LokalNative.requestAllFilesAccess() },
+  async openApp(pkg) {
+    if (!/^[a-z][\w.]{2,200}$/i.test(String(pkg || ''))) throw new Error('Unknown app')
+    return LokalNative.openApp({ package: pkg })
+  },
+  async appInstalled(pkg) { return (await LokalNative.appInstalled({ package: String(pkg || '') })).installed },
+  // A SpotiFLAC addon's verification page, in a window of its own.
+  async addonAuth(options) {
+    if (!options || typeof options.url !== 'string' || !options.url.startsWith('https://')) throw new Error('No verification page')
+    return LokalNative.addonAuth({ url: options.url, callback: options.callback || null, domains: Array.isArray(options.domains) ? options.domains.map(String) : [] })
+  },
 }
 
 const MEDIA_ACTIONS = ['play', 'pause', 'stop', 'nexttrack', 'previoustrack', 'seekto', 'seekbackward', 'seekforward']
@@ -199,6 +209,12 @@ window.addEventListener('message', async (event) => {
     document.documentElement.style.setProperty('--bg', m.bg)
     SystemBars.setStyle({ style: m.light ? 'LIGHT' : 'DARK' }).catch(() => {})
   }
+})
+
+// Back from another app (SpotiFLAC...): pick up what it downloaded now.
+App.addListener('resume', () => {
+  if (frame.hidden) return
+  fetch(`${ORIGIN}/api/settings/sync-folder`, { method: 'POST' }).catch(() => {})
 })
 
 App.addListener('backButton', () => {

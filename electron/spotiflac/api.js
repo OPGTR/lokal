@@ -33,6 +33,28 @@ async function dispatch(db, request = {}) {
       return packages.authStatus(key)
     }
     case 'package.callback': return packages.authCallback(key,url)
+    // Verification in a window the host draws itself (the Android app):
+    // what to load and where it may go, then the callback and its cookies.
+    case 'package.authInfo': {
+      const runtime=await packages.runtime(key);if(runtime.host.session)await runtime.host.session.bootstrap(runtime.host.signal)
+      const status=await packages.authStatus(key),pending=runtime.host.session?.pending || runtime.host.auth.pending
+      if(!pending?.url)return {...status,url:null}
+      const permissions=runtime.host.network.permissions
+      require('./network').validateURL(pending.url,permissions)
+      return {...status,url:pending.url,callback:runtime.host.session?.config.callbackUrl || runtime.host.auth.pending?.callback || null,domains:permissions.network || []}
+    }
+    case 'package.authComplete': {
+      const runtime=await packages.runtime(key),permissions=runtime.host.network.permissions,{domainAllowed}=require('./network')
+      for(const cookie of Array.isArray(request.cookies)?request.cookies.slice(0,200):[]){
+        const host=String(cookie?.domain || '').replace(/^\./,'').toLowerCase()
+        if(!host||!domainAllowed(host,permissions.network || [])||!/^[^\s;=]+$/.test(String(cookie.name || ''))||/[;\r\n]/.test(String(cookie.value ?? '')))continue
+        const attributes=`${cookie.name}=${cookie.value}; Domain=${host}; Path=${cookie.path || '/'}${cookie.secure===false?'':'; Secure'}`
+        try{runtime.host.network.cookies.setCookieSync(attributes,`${cookie.secure===false?'http':'https'}://${host}${cookie.path || '/'}`)}catch{}
+      }
+      runtime.host.network.persist?.()
+      if(url)await packages.authCallback(key,url)
+      return packages.authStatus(key)
+    }
     case 'package.logout': { const runtime=await packages.runtime(key);runtime.host.session?.clear();await runtime.host.authCall('clearAuth',[]);packages.forgetConnection(key);if(process.versions.electron)await require('./authWindow').clearAuthSession(key);return {ok:true} }
     case 'package.home': return (await packages.runtime(key)).invoke('getHomeFeed')
     case 'package.browse': return (await packages.runtime(key)).invoke('getBrowseCategories')

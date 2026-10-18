@@ -1,6 +1,8 @@
 'use strict'
 // Lokal's server, started inside the Android app's embedded Node.js.
 require('./polyfills')
+// ffmpeg / ffprobe as WebAssembly: before any backend module grabs child_process.
+require('./tools').install()
 
 const path = require('path')
 const os = require('os')
@@ -56,6 +58,50 @@ setTimeout(async () => {
     }
   } catch (error) { console.error('[lokal] startup rescan failed:', error && error.message) }
 }, 5000)
+
+// SpotiFLAC sync: while Lokal runs, look at the folder the SpotiFLAC app
+// downloads into every half minute; when its files change, scan it (only
+// the new or changed files are read). Lokal also asks for this when it comes
+// back to the foreground (see the shell page).
+;(() => {
+  const AUDIO = /\.(mp3|flac|m4a|mp4|aac|ogg|oga|opus|wav|aiff?|wma|ape|wv|alac)$/i
+  let last = null
+  const signature = (dir) => {
+    let count = 0, size = 0, newest = 0
+    const walk = (d, depth) => {
+      if (depth > 6) return
+      let entries
+      try { entries = fs.readdirSync(d, { withFileTypes: true }) } catch { return }
+      for (const e of entries) {
+        if (e.name.startsWith('.')) continue
+        const full = path.join(d, e.name)
+        if (e.isDirectory()) walk(full, depth + 1)
+        else if (AUDIO.test(e.name)) {
+          try { const st = fs.statSync(full); count++; size += st.size; newest = Math.max(newest, st.mtimeMs) } catch {}
+        }
+      }
+    }
+    walk(dir, 0)
+    return `${count}:${size}:${Math.round(newest)}`
+  }
+  const tick = async () => {
+    try {
+      const { getDB } = require('../../electron/ipc/db')
+      const folder = getDB().prepare("SELECT value FROM settings WHERE key = 'spotiflac_sync_folder'").get()?.value
+      if (!folder || !fs.existsSync(folder)) { last = null; return }
+      const now = signature(folder)
+      if (last !== null && now !== last) {
+        const scanner = require('../../electron/ipc/scanner')
+        if (!scanner.getScanStatus().scanning) {
+          const status = await scanner.scanFolder(folder, { saveRoot: false, watch: false })
+          if (status.added) console.log(`[lokal] SpotiFLAC sync: ${status.added} new track(s)`)
+        } else return // try again next time
+      }
+      last = now
+    } catch (error) { console.error('[lokal] SpotiFLAC sync failed:', error && error.message) }
+  }
+  setTimeout(() => { tick(); setInterval(tick, 30000) }, 15000)
+})()
 
 if (bridge && bridge.channel) {
   // Tell the app the server is up (it also polls, so this is only a speed-up).

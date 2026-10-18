@@ -29,6 +29,13 @@
 
         </activity>
 
+        <!-- SpotiFLAC addon verification pages -->
+        <activity
+            android:name=".AddonAuthActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:theme="@style/AppTheme.NoActionBar" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -39,6 +46,11 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
     </application>
+
+    <!-- The SpotiFLAC app, opened from Lokal's SpotiFLAC sync -->
+    <queries>
+        <package android:name="com.zarz.spotiflac" />
+    </queries>
 
     <!-- Permissions -->
 

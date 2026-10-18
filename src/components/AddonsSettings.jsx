@@ -97,7 +97,7 @@ function AddonCard({ addon, onChanged, focused = false }) {
     if (result?.open_auth_url && /^https:\/\//i.test(result.open_auth_url)) {
       // A login page: the desktop app opens it in its own window and checks
       // access when it closes (no callback link to copy back).
-      if (api.isElectron) await api.addonsPackages({ action: 'package.openAuth', key: addon.key }).catch(() => null)
+      if (api.isElectron || api.isAndroid) await api.addonsPackages({ action: 'package.openAuth', key: addon.key }).catch(() => null)
       else setAuth({ open_auth_url: result.open_auth_url })
     }
     if (result?.message) setMessage(t(result.message))
@@ -156,7 +156,7 @@ function AddonCard({ addon, onChanged, focused = false }) {
                 {addon.signedSession && !verified && <button disabled={busy || !addon.enabled} onClick={verify} className="rounded-lg bg-accent/20 px-3 py-2 text-xs text-accent disabled:opacity-40">{t("Verify access")}</button>}
                 {verified && <button disabled={busy} onClick={() => run(async () => { const result = await api.addonsPackages({ action: 'package.logout', key: addon.key }); setAuth({ authenticated: false }); onChanged(); return result })} className="text-xs text-muted hover:text-text">{t("Disconnect")}</button>}
               </div>}
-              {!api.isElectron && auth?.open_auth_url && /^https:\/\//i.test(auth.open_auth_url) && <button onClick={() => api.openExternal(auth.open_auth_url)} className="text-xs text-accent underline">{t("Open verification / login page")}</button>}
+              {!api.isElectron && !api.isAndroid && auth?.open_auth_url && /^https:\/\//i.test(auth.open_auth_url) && <button onClick={() => api.openExternal(auth.open_auth_url)} className="text-xs text-accent underline">{t("Open verification / login page")}</button>}
               {form && <form onSubmit={e => { e.preventDefault(); action(form.submit_action, formInput, form.token) }} className="space-y-3 rounded-lg border border-border p-3">
                 <p className="text-sm text-text">{form.title || 'Account details'}</p>{form.description && <p className="text-xs text-muted">{form.description}</p>}
                 {form.fields.map(field => <SettingField key={field.key} field={{ ...field, secret: ['password', 'otp'].includes(field.type), options: field.options?.map(o => ({ value: o, label: o })) }} value={formInput[field.key] ?? field.default} onChange={v => setFormInput(current => ({ ...current, [field.key]: v }))} />)}

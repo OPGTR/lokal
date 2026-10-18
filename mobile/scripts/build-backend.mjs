@@ -28,6 +28,8 @@ const SHIPPED = {
   '@jitl/quickjs-ffi-types': requireRoot,
   '@jitl/quickjs-wasmfile-release-sync': requireRoot,
   '@jitl/quickjs-wasmfile-release-asyncify': requireRoot,
+  // ffmpeg as WebAssembly (backend/tools.js): only its CommonJS build.
+  '@ffmpeg/core': requireMobile,
 }
 
 fs.rmSync(out, { recursive: true, force: true })
@@ -93,6 +95,7 @@ const entries = [
   { in: path.join(mobile, 'backend', 'entry.js'), out: 'index.js' },
   { in: path.join(root, 'electron', 'automix', 'worker.js'), out: 'automix-worker.js' },
   { in: path.join(root, 'electron', 'spotiflac', 'worker.js'), out: 'spotiflac-worker.js' },
+  { in: path.join(mobile, 'backend', 'ffmpeg-worker.js'), out: 'ffmpeg-worker.js' },
 ]
 
 for (const entry of entries) {
@@ -151,6 +154,7 @@ function copyPackage(name, req) {
     filter: (p) => {
       const rel = path.relative(src, p)
       if (/(^|[\\/])(test|tests|docs|example|examples|\.github)([\\/]|$)/.test(rel)) return false
+      if (name === '@ffmpeg/core' && /^dist[\\/]esm/.test(rel)) return false
       return !/\.(map|md)$/.test(p)
     },
   })

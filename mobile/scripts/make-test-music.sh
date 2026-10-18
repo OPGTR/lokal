@@ -18,6 +18,8 @@ tagged "Кино/Группа крови/01 Группа крови.flac" 523 "-
 tagged "Daft Punk/Discovery/01 One More Time.m4a" 587 "-c:a aac -b:a 128k -c:v mjpeg" "One More Time" "Daft Punk" "Discovery" 1 2001 "Electronic"
 ffmpeg -loglevel error -y -f lavfi -i "$(tone 550 12)" -c:a libvorbis -metadata title="Aerodynamic" -metadata artist="Daft Punk" -metadata album="Discovery" -metadata track=2 -metadata date=2001 -metadata genre=Electronic "Daft Punk/Discovery/02 Aerodynamic.ogg"
 ffmpeg -loglevel error -y -f lavfi -i "$(tone 660 12)" -c:a libopus -metadata title="Digital Love" -metadata artist="Daft Punk" -metadata album="Discovery" -metadata track=3 -metadata date=2001 -metadata genre=Electronic "Daft Punk/Discovery/03 Digital Love.opus"
+# Apple Lossless: the phone plays it through a FLAC copy made by ffmpeg (WebAssembly).
+ffmpeg -loglevel error -y -f lavfi -i "$(tone 610 12)" -c:a alac -metadata title="Something About Us" -metadata artist="Daft Punk" -metadata album="Discovery" -metadata track=4 -metadata date=2001 "Daft Punk/Discovery/04 Something About Us.m4a"
 printf '[00:01.00]Okay ladies\n[00:05.00]Now let us get in formation\n' > "Beyoncé/Lemonade/01 Formation.lrc"
 # An MP3 with only an ID3v1 tag (Latin-1 text).
 ffmpeg -loglevel error -y -f lavfi -i "$(tone 700 10)" -c:a libmp3lame -b:a 96k -id3v2_version 0 -write_xing 0 "Misc/v1only.mp3"

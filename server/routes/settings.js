@@ -166,6 +166,21 @@ router.get('/scan-status', (req, res) => {
   res.json(require('../../electron/ipc/scanner').getScanStatus())
 })
 
+// The folder another app downloads into (the Android app's SpotiFLAC sync):
+// scanned again on request, quickly (unchanged files are skipped).
+router.post('/sync-folder', async (req, res) => {
+  try {
+    const db = getDB()
+    const folder = db.prepare("SELECT value FROM settings WHERE key = 'spotiflac_sync_folder'").get()?.value
+    if (!folder) return res.json({ ok: false, reason: 'not-set' })
+    if (!fs.existsSync(folder)) return res.json({ ok: false, reason: 'missing', folder })
+    const scanner = require('../../electron/ipc/scanner')
+    if (scanner.getScanStatus().scanning) return res.json({ ok: false, reason: 'busy' })
+    const status = await scanner.scanFolder(folder, { saveRoot: false, watch: false })
+    res.json({ ok: true, folder, added: status.added || 0 })
+  } catch (error) { res.status(500).json({ error: error.message }) }
+})
+
 // Several music folders, scanned one after another (like the desktop app).
 router.post('/scan-folders', async (req, res) => {
   try {
