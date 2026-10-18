@@ -28,6 +28,64 @@ const { sourceIdentity, onlineTrackId, streamedTwins, sourceRefOf, sourceRefOfTr
 const { readInfo, coverThumbnail, imageThumbnail } = require('./tagger')
 const { makePlayable } = require('./convert')
 
+// Saving an addon's file. Android's shared storage refuses copyfile() and
+// chmod() (EACCES) in many folders, so the file is copied as a plain stream
+// and, if the folder still refuses it, saved in the next folder that accepts
+// it (Music/Lokal, then Lokal's own storage).
+const NO_WRITE = new Set(['EACCES', 'EPERM', 'EROFS', 'ENOTDIR', 'ENOENT'])
+async function streamCopy(source, target, signal) {
+  const { pipeline } = require('stream/promises')
+  try {
+    await pipeline(fs.createReadStream(source), fs.createWriteStream(target, { flags: 'wx' }), ...(signal ? [{ signal }] : []))
+  } catch (error) {
+    await fs.promises.unlink(target).catch(() => {})
+    throw error
+  }
+}
+// One level at a time: on Android, Node 18's recursive mkdir can hang on a
+// folder it may not create.
+async function makeDir(dir) {
+  const parts = path.resolve(dir).split(path.sep)
+  let current = parts[0] || path.sep
+  for (const part of parts.slice(1)) {
+    current = path.join(current, part)
+    try { await fs.promises.mkdir(current) } catch (error) { if (error.code !== 'EEXIST') throw error }
+  }
+}
+function addonSaveDirs(outputDir) {
+  const dirs = [path.resolve(outputDir)]
+  if (process.env.LOKAL_ANDROID === '1') {
+    dirs.push('/storage/emulated/0/Music/Lokal')
+    if (process.env.LOKAL_DATA_DIR) dirs.push(path.join(path.dirname(process.env.LOKAL_DATA_DIR), 'music'))
+  } else {
+    dirs.push(path.join(os.homedir(), 'Music', 'Lokal'))
+  }
+  return [...new Set(dirs)]
+}
+async function saveAddonFile(source, outputDir, title, signal) {
+  const ext = path.extname(source)
+  let lastError = null
+  for (const dir of addonSaveDirs(outputDir)) {
+    try {
+      await makeDir(dir)
+      for (let suffix = 0; suffix < 1000; suffix++) {
+        const target = path.join(dir, suffix ? `${title} (${suffix})${ext}` : `${title}${ext}`)
+        try {
+          await streamCopy(source, target, signal)
+          return target
+        } catch (error) {
+          if (error.code === 'EEXIST') continue
+          throw error
+        }
+      }
+    } catch (error) {
+      if (signal?.aborted || !NO_WRITE.has(error.code)) throw error
+      lastError = error
+    }
+  }
+  throw lastError || new Error('No folder accepted the downloaded file')
+}
+
 const ACTIVE = new Set(['queued', 'downloading'])
 const RETRY_DELAYS_MS = [5000, 20000]
 const HISTORY_LIMIT = 150
@@ -1061,7 +1119,7 @@ class DownloadManager {
       try { reused = await require('../spotiflac/media').cachedOrPending(this.db(), provider.slice(2), id) } catch {}
       if (reused?.file && fs.existsSync(reused.file)) {
         const copy = path.join(os.tmpdir(), `lokal-keep-${process.pid}-${Date.now()}${path.extname(reused.file)}`)
-        await fs.copy(reused.file, copy)
+        await streamCopy(reused.file, copy)
         artifact = { file: copy, metadata: {}, cleanup: () => fs.remove(copy).catch(() => {}) }
         this.update(job, { message: 'Saving the song you just played…' })
       } else artifact = await this.downloadPackageWithVerification(provider.slice(2), id, {
@@ -1073,12 +1131,9 @@ class DownloadManager {
       })
       controller.signal.throwIfAborted()
       const outputDir = job.opts.outputDir || job.settings.music_folder || path.join(os.homedir(), 'Music')
-      fs.ensureDirSync(outputDir)
       const title = String(job.title || 'Addon Track').replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/[. ]+$/, '').slice(0,180)
-      const ext = path.extname(artifact.file)
-      let target = path.join(outputDir, `${title}${ext}`)
-      for (let suffix = 1; fs.existsSync(target); suffix++) target = path.join(outputDir, `${title} (${suffix})${ext}`)
-      await fs.copy(artifact.file, target, { overwrite: false, errorOnExist: true })
+      const target = await saveAddonFile(artifact.file, outputDir, title, controller.signal)
+      if (path.dirname(target) !== path.resolve(outputDir)) this.update(job, { message: `Saved in ${path.dirname(target)} (${outputDir} refused the file)` })
       if (controller.signal.aborted) { await fs.remove(target); controller.signal.throwIfAborted() }
       const meta = artifact.metadata || {}
       job.opts.tags = mergePackageDownloadTags(meta, job.opts.tags || {})
