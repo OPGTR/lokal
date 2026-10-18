@@ -20,7 +20,7 @@ const { cacheArtistMetadata, refreshArtistMetadata, startRefreshAll, refreshAllS
 const { recordListeningEvent } = require('./recaps')
 const { artistIdFromName, findArtistById, migrateUnknownArtist, resolveArtistId, trackArtistLinks } = require('../artistId')
 
-const DEFAULT_MUSIC_PATH = 'C:\\Users\\sipbuu\\Music'
+const DEFAULT_MUSIC_PATH = process.env.LOKAL_ANDROID ? '/storage/emulated/0/Music' : 'C:\\Users\\sipbuu\\Music'
 const AUDIO_EXTS = new Set(['.mp3', '.flac', '.m4a', '.ogg', '.wav', '.aac', '.opus', '.wma', '.alac', '.ape'])
 // Same secrets as the web server's SECRET_KEYS (server/routes/settings.js):
 // masked by settings:get, left out of settings:exportAll, kept on import.
@@ -2198,7 +2198,10 @@ async function applyFileChanges(changes = []) {
   }
 }
 
-module.exports = { sourceFilter, genreFilter, userStats, registerScannerHandlers, scanFolder, scanFolders, configuredMusicFolders, applyFileChanges, DEFAULT_MUSIC_PATH, indexSingleFile, AUDIO_EXTS, relinkArtists, relinkArtistsIfNeeded, SECRET_SETTING_KEYS, getLibraryFolders }
+/** The current (or last) scan's progress, for the web server's polling. */
+function getScanStatus() { return { ...scanStatus } }
+
+module.exports = { getScanStatus, sourceFilter, genreFilter, userStats, registerScannerHandlers, scanFolder, scanFolders, configuredMusicFolders, applyFileChanges, DEFAULT_MUSIC_PATH, indexSingleFile, AUDIO_EXTS, relinkArtists, relinkArtistsIfNeeded, SECRET_SETTING_KEYS, getLibraryFolders }
 
 
 function registerExtraHandlers(ipcMain) {

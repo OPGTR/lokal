@@ -93,7 +93,7 @@ export default function Library() {
   const shouldAnimateGrid = tracks.length <= HEAVY_GRID_THRESHOLD
 
   const addMusicFolder = async () => {
-    if (!api.isElectron || addingMusicFolder) return
+    if (!api.canPickFolders || addingMusicFolder) return
     setMusicRootError('')
     const selected = await api.openFolder()
     if (!selected || typeof selected !== 'string') return
@@ -328,7 +328,7 @@ export default function Library() {
                 : t('Browse your music folders')}
           </p>
           <div className="ml-auto flex min-w-0 items-center gap-2">
-            {api.isElectron && (
+            {api.canPickFolders && (
               <button type="button" onClick={addMusicFolder} disabled={addingMusicFolder}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-elevated px-3 py-1.5 text-xs text-muted transition-colors hover:text-white disabled:opacity-50">
                 {addingMusicFolder ? <Loader2 size={13} className="animate-spin" /> : <FolderPlus size={13} />}

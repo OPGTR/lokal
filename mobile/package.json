@@ -1,0 +1,31 @@
+{
+  "name": "lokal-android",
+  "private": true,
+  "version": "9.1.4",
+  "description": "Android build of Lokal: the Lokal server runs on the phone in an embedded Node.js and the Lokal interface plays your phone's music.",
+  "scripts": {
+    "build:ui": "cd .. && vite build --outDir mobile/build/ui --emptyOutDir",
+    "build:backend": "node scripts/build-backend.mjs",
+    "build:shell": "node scripts/build-shell.mjs",
+    "build": "npm run build:ui && npm run build:backend && npm run build:shell",
+    "sync": "cap sync android",
+    "apk": "npm run build && cap sync android && cd android && ./gradlew assembleRelease",
+    "test:backend": "node scripts/smoke-test.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@capgo/capacitor-media-session": "8.1.4",
+    "capacitor-nodejs": "https://github.com/hampoelz/capacitor-nodejs/releases/download/v1.0.0-beta.10/capacitor-nodejs.tgz"
+  },
+  "devDependencies": {
+    "@babel/core": "8.0.7",
+    "@babel/plugin-transform-unicode-property-regex": "8.0.1",
+    "@babel/plugin-transform-unicode-sets-regex": "8.0.1",
+    "@capacitor/cli": "8.5.3",
+    "esbuild": "0.28.2",
+    "node-sqlite3-wasm": "0.8.61",
+    "unorm": "1.6.0"
+  }
+}

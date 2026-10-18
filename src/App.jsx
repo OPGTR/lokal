@@ -27,6 +27,8 @@ import MiniPlayer from './components/MiniPlayer'
 import RecapStories from './components/RecapStories'
 import Onboarding, { useOnboarding } from './components/Onboarding'
 import PostOnboardingTour from './components/PostOnboardingTour'
+import PhoneBar from './components/PhoneBar'
+import { usePhoneLayout } from './phoneLayout'
 import Home from './pages/Home'
 import Albums from './pages/Albums'
 import Genres, { GenreTracks } from './pages/Genres'
@@ -354,6 +356,8 @@ function AnimatedRoutes() {
 
 /** The app shell: header, sidebar, pages, side panels, player and overlays. */
 export default function App() {
+  // Narrow screen / the Android app: bottom bar instead of the sidebars.
+  const phone = usePhoneLayout()
   useEffect(() => api.onLibraryChanged?.(() => {
     window.dispatchEvent(new Event('lokal:refresh'))
   }), [])
@@ -3054,15 +3058,15 @@ export default function App() {
             <TitleBar />
             <ReleaseRefreshBanner />
             <div className="flex flex-1 overflow-hidden" data-app-layout>
-              <Sidebar />
-              <main ref={pageWidthRef} className="min-w-0 flex-1 overflow-y-auto bg-transparent pb-[var(--player-space,0px)] [scrollbar-gutter:stable]">
+              {!phone && <Sidebar />}
+              <main ref={pageWidthRef} className={`min-w-0 flex-1 overflow-y-auto bg-transparent ${phone ? '' : 'pb-[var(--player-space,0px)] [scrollbar-gutter:stable]'}`}>
                 <AnimatedRoutes />
               </main>
-              <RightSidebar />
+              {!phone && <RightSidebar />}
               {!exclusiveSidePanels && <QueuePanel />}
-              {!exclusiveSidePanels && <LyricsSidePanel />}
+              {!exclusiveSidePanels && !phone && <LyricsSidePanel />}
             </div>
-            <PlayerBar />
+            {phone ? <PhoneBar /> : <PlayerBar />}
             {/* Also full-screen lyrics: one overlay, two layouts. */}
             <FullscreenPlayer />
             <MusicVideoPlayer />
@@ -3086,7 +3090,7 @@ export default function App() {
               <Onboarding isOpen={showOnboarding} onComplete={completeOnboarding} />
             )}
             
-            <PostOnboardingTour />
+            {!phone && <PostOnboardingTour />}
             
             {renderYtDlpNotice()}
             {renderUpdateToast()}

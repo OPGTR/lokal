@@ -17,9 +17,9 @@ const app = express()
 app.use(cors())
 app.use(express.json({ limit: '10mb' }))
 
-const distPath = path.join(__dirname, '../dist')
+const distPath = process.env.LOKAL_DIST_DIR || path.join(__dirname, '../dist')
 const packagedElectron = !!(process.versions.electron && require('electron').app?.isPackaged)
-const publicPath = packagedElectron ? path.join(process.resourcesPath, 'public') : path.join(__dirname, '../public')
+const publicPath = process.env.LOKAL_PUBLIC_DIR || (packagedElectron ? path.join(process.resourcesPath, 'public') : path.join(__dirname, '../public'))
 function isPhoneRemoteEnabled() {
   try {
     const saved = getDB().prepare("SELECT value FROM settings WHERE key = 'phone_remote_enabled'").get()?.value
@@ -187,7 +187,7 @@ app.get('*', (req, res) => {
 })
 
 const PORT = process.env.PORT || 3421
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, process.env.LOKAL_HOST || '0.0.0.0', () => {
   console.log(`Lokal Music → http://localhost:${PORT}`);
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {

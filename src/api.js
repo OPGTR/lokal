@@ -1,5 +1,6 @@
 import { updateYoutubeAccountStatus, clearYoutubeAccountStatus, youtubeAccountStatusRevision } from './youtubeAccountStatus.js'
 import { cancelDownloadBatches } from './downloadCancellation.js'
+import { isAndroid, androidApi } from './android.js'
 
 const isE = () => {
   try {
@@ -165,8 +166,47 @@ export function wordSyncEnabled() {
   try { return localStorage.getItem('word-sync') !== '0' } catch { return true }
 }
 
+// Web mode: the server has no progress events, so poll its scan status and
+// report it the way the desktop app does (a last report with `complete`).
+// Listeners get the status as both arguments: some read (progress), some
+// (event, progress).
+const scanWatchers = new Set()
+let scanPoll = null
+let scanWasRunning = false
+function pollWebScan() {
+  if (scanPoll || !scanWatchers.size) return
+  const tick = async () => {
+    scanPoll = null
+    const status = await apiFetch('/settings/scan-status').catch(() => null)
+    if (status && !status.error) {
+      if (status.scanning) {
+        scanWasRunning = true
+        for (const fn of scanWatchers) { try { fn(status, status) } catch {} }
+      } else if (scanWasRunning) {
+        scanWasRunning = false
+        const done = { ...status, complete: true }
+        for (const fn of scanWatchers) { try { fn(done, done) } catch {} }
+      }
+    }
+    if (scanWatchers.size) scanPoll = setTimeout(tick, scanWasRunning ? 700 : 2500)
+  }
+  scanPoll = setTimeout(tick, 300)
+}
+function watchWebScan(fn) {
+  scanWatchers.add(fn)
+  pollWebScan()
+  return () => {
+    scanWatchers.delete(fn)
+    if (!scanWatchers.size && scanPoll) { clearTimeout(scanPoll); scanPoll = null }
+  }
+}
+
 export const api = {
   get isElectron() { return isE() },
+  // The Lokal Android app (server on the phone, see android.js).
+  get isAndroid() { return isAndroid },
+  // A native folder picker (desktop, Android); web mode types a path instead.
+  get canPickFolders() { return isE() || isAndroid },
   fileURL: (path) => electronFileURL(path),
   artworkURL: (id) => `${BASE}/artwork/${encodeURIComponent(id)}`,
   folderArtworkURL: (filePath) => `${BASE}/tracks/folder-artwork?path=${encodeURIComponent(filePath || '')}`,
@@ -238,7 +278,7 @@ export const api = {
   flowPool: (uid) => isE() && el()?.flowPool ? el().flowPool(uid || 'guest') : apiFetch(`/tracks/flow-pool?userId=${encodeURIComponent(uid || 'guest')}`),
   spotifyLikesPush: (track) => isE() && el()?.spotifyLikesPush ? el().spotifyLikesPush(track) : Promise.resolve({ ok: false }),
   getLikedTracks: (uid) => isE() ? el().getLikedTracks(uid) : apiFetch(`/tracks/liked?userId=${uid||'guest'}`),
-  incrementPlayTime: (tid, uid, s) => isE() ? el().incrementPlayTime(tid, uid, s) : Promise.resolve(),
+  incrementPlayTime: (tid, uid, s) => isE() ? el().incrementPlayTime(tid, uid, s) : apiFetch(`/tracks/${encodeURIComponent(tid)}/playtime`, { method: 'POST', body: { userId: uid || 'guest', seconds: s } }),
   getHistory: (uid, l) => isE() ? el().getHistory(uid, l) : apiFetch(`/tracks/history?userId=${uid||'guest'}&limit=${l||30}`),
   getSuggestions: (uid) => isE() ? el().getSuggestions(uid) : apiFetch(`/tracks/suggestions?userId=${uid||'guest'}`),
   getRelated: (tid, uid) => isE() ? el().getRelated(tid, uid) : apiFetch(`/tracks/${tid}/related?userId=${uid||'guest'}`),
@@ -366,6 +406,9 @@ export const api = {
   scanFolders: async (folders) => {
     const list = [...new Set((Array.isArray(folders) ? folders : []).filter(value => typeof value === 'string' && value.trim()).map(value => value.trim()))]
     if (isE()) return el().scanFolders(list)
+    // One request: the server scans the folders one after another.
+    const result = await apiFetch('/settings/scan-folders', { method: 'POST', body: { folders: list } })
+    if (!result?.error || !/not found/i.test(result.error)) return result
     for (const folder of list) await api.scanFolder(folder)
     return api.saveSettings({ music_folders: JSON.stringify(list), music_folder: list[0] || '' })
   },
@@ -655,7 +698,7 @@ export const api = {
   pluginsDisable: (pluginId) => isE() ? el().pluginsDisable(pluginId) : apiFetch(`/plugins/${encodeURIComponent(pluginId)}/disable`, { method: 'POST' }),
   pluginsInstallFromFolder: (sourceFolderPath) => isE() ? el().pluginsInstallFromFolder(sourceFolderPath) : apiFetch('/plugins/install-folder', { method: 'POST', body: { sourceFolderPath } }),
   pluginsRemove: (pluginId) => isE() ? el().pluginsRemove(pluginId) : apiFetch(`/plugins/${encodeURIComponent(pluginId)}`, { method: 'DELETE' }),
-  onScanProgress: (fn) => { if (isE()) return el().onScanProgress(fn); return () => {} },
+  onScanProgress: (fn) => { if (isE()) return el().onScanProgress(fn); return watchWebScan(fn) },
   onDownloadProgress: (fn) => { if (isE()) return el().onDownloadProgress(fn); return () => {} },
   getAvatarSrc: (user) => {
     if (!user) return 'fallback_nopfp.png';
@@ -688,3 +731,6 @@ export const api = {
   updateTrackArtwork: (id, imageData) => isE() ? el().updateTrackArtwork(id, imageData) : apiFetch(`/tracks/${id}/artwork`, { method: 'PUT', body: { imageData } }),
   fetchExternalArtwork: (id, title, artist) => isE() ? el().fetchExternalArtwork(id, title, artist) : apiFetch(`/tracks/${id}/fetch-external-artwork`, { method: 'POST', body: { title, artist } }),
 }
+
+// On the phone, a few calls go to the Android app instead (android.js).
+androidApi(api)

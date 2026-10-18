@@ -40,7 +40,11 @@ function NavItem({ icon: Icon, label, active, onClick, collapsed, badge, tour })
 }
 
 /** Left sidebar: account, navigation and playlists; collapsible to icons. */
-export default function Sidebar() {
+/**
+ * `drawer`: shown in the phone layout's slide-in menu (full width, never
+ * collapsed; `onClose` closes the menu).
+ */
+export default function Sidebar({ drawer = false, onClose } = {}) {
   const nav = useNavigate()
   const loc = useLocation()
   const { t } = useTranslation()
@@ -54,7 +58,8 @@ export default function Sidebar() {
   const { visible: visibleNav, hidden: hiddenNav } = splitSidebarNav(sidebarNavOrder(sidebarNavValue))
   
   const { user, openAuth, logout } = useAppStore()
-  const [collapsed, setCollapsed] = useState(readCollapsed)
+  const [collapsedState, setCollapsed] = useState(readCollapsed)
+  const collapsed = drawer ? false : collapsedState
   const toggleCollapsed = () => setCollapsed(value => {
     try { localStorage.setItem(COLLAPSED_KEY, value ? '0' : '1') } catch {}
     return !value
@@ -199,7 +204,7 @@ export default function Sidebar() {
   return (
     <aside
       aria-label={t("Sidebar")}
-      className={`${collapsed ? 'w-[4.5rem]' : 'w-56'} border-r border-border flex flex-col h-full pb-[var(--player-space,0px)] flex-shrink-0 overflow-hidden transition-[width] duration-200 ease-out`}
+      className={`${drawer ? 'w-full' : collapsed ? 'w-[4.5rem]' : 'w-56'} border-r border-border flex flex-col h-full ${drawer ? 'pb-4' : 'pb-[var(--player-space,0px)]'} flex-shrink-0 overflow-hidden transition-[width] duration-200 ease-out`}
       style={{ backgroundColor: 'rgba(var(--surface-rgb), 0.85)', backdropFilter: 'blur(12px)' }}
     >
       <div className={`${collapsed ? 'px-0' : 'px-5'} py-4 flex-shrink-0`}>
@@ -242,8 +247,8 @@ export default function Sidebar() {
           </div>
           {!collapsed && <span className="font-display text-sm uppercase tracking-widest text-white">{t("Lokal")}</span>}
           <button
-            onClick={toggleCollapsed}
-            title={collapsed ? t('Expand sidebar') : t('Collapse sidebar')}
+            onClick={drawer ? onClose : toggleCollapsed}
+            title={drawer ? t('Close') : collapsed ? t('Expand sidebar') : t('Collapse sidebar')}
             aria-label={collapsed ? t('Expand sidebar') : t('Collapse sidebar')}
             aria-expanded={!collapsed}
             className={`${collapsed ? 'mt-1' : 'ml-auto'} flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-elevated hover:text-white`}

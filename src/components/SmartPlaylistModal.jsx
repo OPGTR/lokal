@@ -58,8 +58,8 @@ function RuleRow({ rule, genres, onChange, onRemove }) {
       {spec.input === 'folder' && (
         <span className="flex min-w-0 flex-1 items-center gap-1.5">
           <input aria-label={t("Folder")} value={rule.value} onChange={(e) => set({ value: e.target.value })}
-            placeholder={api.isElectron ? 'Choose a folder…' : '/music/Live'} className={`${field} min-w-0 flex-1`} />
-          {api.isElectron && (
+            placeholder={api.canPickFolders ? 'Choose a folder…' : '/music/Live'} className={`${field} min-w-0 flex-1`} />
+          {api.canPickFolders && (
             <button onClick={pickFolder} title={t("Choose a folder")} aria-label={t("Choose a folder")}
               className="rounded-lg border border-border p-1.5 text-muted hover:text-white"><FolderOpen size={13} /></button>
           )}

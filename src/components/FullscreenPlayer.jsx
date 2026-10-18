@@ -1,9 +1,10 @@
 import { useTranslation } from '../i18n'
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { X, Play, Pause, SkipBack, SkipForward, Heart, Shuffle, Repeat, Repeat1, Mic2, ListMusic, ListPlus, Search, Maximize2, Expand, Minimize, Volume2, Film, Clapperboard, Image as ImageIcon } from 'lucide-react'
+import { X, Play, Pause, SkipBack, SkipForward, Heart, Shuffle, Repeat, Repeat1, Mic2, ListMusic, ListPlus, Search, Maximize2, Expand, Minimize, Volume2, Film, Clapperboard, Image as ImageIcon, ChevronDown } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { usePlayerStore, useAppStore } from '../store/player'
+import { usePhoneLayout } from '../phoneLayout'
 import { useShallow } from 'zustand/react/shallow'
 import LyricsPanel from './LyricsPanel'
 import { cacheLyrics, hasLyricLines, peekLyrics } from '../lyrics/lyricsCache'
@@ -228,6 +229,9 @@ function SearchDrawer({ track, onClose, onSelect }) {
 
 export default function FullscreenPlayer() {
   const { t } = useTranslation()
+  // Phone: cover, controls and title stacked; lyrics/queue over them.
+  const phone = usePhoneLayout()
+  const coverSize = phone ? 'min(calc(100vw - 2.5rem), 46vh)' : COVER_SIZE
   const {
     showFullscreen, toggleFullscreen, currentTrack, isPlaying,
     progress, duration, volume, shuffle, repeat,
@@ -443,7 +447,7 @@ export default function FullscreenPlayer() {
   useLayoutEffect(() => {
     const opened = showFullscreen && !wasShowingRef.current
     wasShowingRef.current = showFullscreen
-    if (!opened || !currentTrack) return undefined
+    if (!opened || !currentTrack || phone) return undefined
     const track = currentTrack
     const showLyrics = () => setFullscreenPanel(panel => (panel === 'none' ? 'lyrics' : panel))
     const cached = peekLyrics(track.id)
@@ -551,12 +555,13 @@ export default function FullscreenPlayer() {
     events.forEach(type => window.addEventListener(type, wake, { passive: true }))
     return () => { clearTimeout(timer); events.forEach(type => window.removeEventListener(type, wake)) }
   }, [showFullscreen])
-  const chromeHidden = idle && !showSearch
+  // No mouse on a phone: the controls stay.
+  const chromeHidden = idle && !showSearch && !phone
   const setOverChrome = useCallback((over) => { overChromeRef.current = over }, [])
   // Each piece of the header fades by itself (glass inside a fading parent flashes grey; see COVER_FADE).
   const chromeFade = `transition-[opacity,color,background-color] duration-300 ${chromeHidden ? 'opacity-0' : 'opacity-100'}`
   const [coverHover, setCoverHover] = useState(false)
-  const controlsShown = coverHover && !chromeHidden
+  const controlsShown = (coverHover || phone) && !chromeHidden
   /**
    * Tilt the fullscreen cover toward the pointer without adding a hover-light effect.
    * @param {PointerEvent} event Pointer movement over the cover.
@@ -738,7 +743,7 @@ export default function FullscreenPlayer() {
           {/* The cover, with the controls over it (shown while the pointer is
               on it), then the progress, the title and the artist. Clear of
               the header, so a tall canvas doesn't run into "Playing from". */}
-          <div className={`relative z-10 flex flex-col items-center justify-center flex-1 min-w-0 px-12 pt-24 pb-12 ${showFullscreen ? 'transition-all duration-500' : ''}`}>
+          <div className={`relative z-10 flex flex-col items-center justify-center flex-1 min-w-0 ${phone ? 'px-5 pt-16 pb-6' : 'px-12 pt-24 pb-12'} ${showFullscreen ? 'transition-all duration-500' : ''}`}>
             {/* One card for every song (never swapped, so never waiting on an
                 exit while the window is minimized): the artwork changes inside
                 it (MixCovers: AutoMix's cloudy dissolve, else a short fade). */}
@@ -758,7 +763,7 @@ export default function FullscreenPlayer() {
                 // frame -- slow, especially while the panel slid open.)
                 style={fsCanvas
                   ? { height: 'min(38rem, 62vh)', aspectRatio: '9 / 16', transition: 'height 420ms ease' }
-                  : { width: COVER_SIZE, height: COVER_SIZE }}
+                  : { width: coverSize, height: coverSize }}
               >
                 {artSrc
                   ? <MixCovers track={currentTrack} render={(track, { top }) => (
@@ -819,15 +824,17 @@ export default function FullscreenPlayer() {
                       </div>
                     )}
                     {/* Volume, up the right edge. */}
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                      <VolumePill volume={volume} onChange={setVolume} />
-                    </div>
+                    {!phone && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        <VolumePill volume={volume} onChange={setVolume} />
+                      </div>
+                    )}
                   </div>
                 )}
                 {burst && burst.trackId === currentTrack?.id && <LikeBurst key={burst.id} kind={burst.kind} />}
               </motion.div>
 
-            <div className="relative mt-6 flex items-center gap-3" style={{ width: COVER_SIZE }}>
+            <div className="relative mt-6 flex items-center gap-3" style={{ width: coverSize }}>
               <MixingMark className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none !text-white/80" />
               <span className="w-11 text-right text-sm tabular-nums text-white/75">{fmt(progress)}</span>
               <div ref={barRef} className="group/bar relative h-3.5 flex-1 cursor-pointer overflow-hidden rounded-full bg-white/20 backdrop-blur-[2px] drop-shadow-[0_1px_4px_rgba(0,0,0,0.25)]"
@@ -839,7 +846,7 @@ export default function FullscreenPlayer() {
 
             {/* In at once, fading: never waiting on the old title's way out (see PlayerBar). */}
             <motion.div key={currentTrack?.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              className="mt-5 text-center" style={{ width: COVER_SIZE }}>
+              className="mt-5 text-center" style={{ width: coverSize }}>
               <h2 className="text-3xl font-bold text-white leading-tight truncate">{currentTrack?.title || '—'}</h2>
               <p className="mt-1.5 text-lg text-white/70 truncate">{currentTrack?.artist}</p>
               {currentTrack?.album && <p className="mt-0.5 text-sm text-white/40 truncate">{currentTrack.album}</p>}
@@ -852,9 +859,15 @@ export default function FullscreenPlayer() {
               // happen to exist; with lyrics missing, the panel shows its own
               // "no lyrics" state and search, same as windowed mode.
               <div
-                className={`relative z-10 flex flex-col overflow-hidden pt-24 pb-10 ${showFullscreen ? 'transition-all duration-500' : ''} ${isPanelVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                style={{ width: isPanelVisible ? PANEL_WIDTH : '0px' }}
+                className={`${phone ? 'absolute inset-0 z-30 bg-black/85 backdrop-blur-xl pt-16 pb-6 px-2' : 'relative z-10 pt-24 pb-10'} flex flex-col overflow-hidden ${showFullscreen ? 'transition-all duration-500' : ''} ${isPanelVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                style={phone ? undefined : { width: isPanelVisible ? PANEL_WIDTH : '0px' }}
               >
+                {phone && isPanelVisible && (
+                  <button type="button" onClick={() => setFullscreenPanel('none')} aria-label={t('Close')}
+                    className="absolute left-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white">
+                    <ChevronDown size={20} />
+                  </button>
+                )}
                 {(fullscreenPanel !== 'none' ? fullscreenPanel : lastPanelRef.current) === 'queue' ? (
                   <QueueContent variant="fullscreen" />
                 ) : (

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>Lokal</title>
+  <link rel="stylesheet" href="shell.css">
+</head>
+<body>
+  <main id="screen" class="screen" aria-live="polite">
+    <img class="logo" src="icon.png" alt="" width="88" height="88">
+    <h1 class="name">Lokal</h1>
+    <p id="status" class="status"></p>
+    <div id="spinner" class="spinner" aria-hidden="true"></div>
+    <section id="card" class="card" hidden>
+      <h2 id="card-title"></h2>
+      <p id="card-text"></p>
+      <div class="actions">
+        <button id="card-primary" class="primary" type="button"></button>
+        <button id="card-secondary" class="secondary" type="button"></button>
+      </div>
+      <pre id="card-log" class="log" hidden></pre>
+    </section>
+  </main>
+  <iframe id="app" title="Lokal" hidden
+    allow="autoplay; fullscreen; clipboard-read; clipboard-write; encrypted-media; picture-in-picture"></iframe>
+  <script src="shell.js"></script>
+</body>
+</html>

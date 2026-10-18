@@ -161,6 +161,19 @@ router.put('/artist-split-words', (req, res) => {
   } catch (error) { res.status(500).json({ ok: false, error: error.message }) }
 })
 
+// Web mode has no progress events: the interface polls this while a scan runs.
+router.get('/scan-status', (req, res) => {
+  res.json(require('../../electron/ipc/scanner').getScanStatus())
+})
+
+// Several music folders, scanned one after another (like the desktop app).
+router.post('/scan-folders', async (req, res) => {
+  try {
+    const { scanFolders } = require('../../electron/ipc/scanner')
+    res.json(await scanFolders(Array.isArray(req.body?.folders) ? req.body.folders : []))
+  } catch (error) { res.status(500).json({ error: error.message }) }
+})
+
 router.post('/scan', async (req, res) => {
   const { folder } = req.body
   const target = folder || DEFAULT_MUSIC_PATH

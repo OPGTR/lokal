@@ -1,3 +1,5 @@
+// First: on Android it sets up the media session bridge before the player.
+import './android'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
@@ -33,7 +35,7 @@ preloadFonts()
 // Again once the font stylesheet itself is in (before that, no face matches).
 window.addEventListener('load', preloadFonts, { once: true })
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if ('serviceWorker' in navigator && import.meta.env.PROD && !document.documentElement.classList.contains('lokal-android')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}))
 }
 

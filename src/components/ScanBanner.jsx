@@ -32,7 +32,7 @@ export default function ScanBanner() {
   const scan = async () => {
     // Desktop: the folder picker (cancelling it scans nothing). Web: the
     // server's folder, or a path typed in when there's none yet.
-    const f = api.isElectron
+    const f = api.canPickFolders
       ? await api.openFolder()
       : folder || window.prompt('Path to your music folder on the server')?.trim()
     if (!f) return
