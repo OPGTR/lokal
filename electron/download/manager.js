@@ -1056,7 +1056,15 @@ class DownloadManager {
     let artifact
     Promise.resolve().then(async () => {
       const { provider, id } = job.opts.addonSource
-      artifact = await this.downloadPackageWithVerification(provider.slice(2), id, {
+      // Just played: the addon's copy is in the playback cache already.
+      let reused = null
+      try { reused = await require('../spotiflac/media').cachedOrPending(this.db(), provider.slice(2), id) } catch {}
+      if (reused?.file && fs.existsSync(reused.file)) {
+        const copy = path.join(os.tmpdir(), `lokal-keep-${process.pid}-${Date.now()}${path.extname(reused.file)}`)
+        await fs.copy(reused.file, copy)
+        artifact = { file: copy, metadata: {}, cleanup: () => fs.remove(copy).catch(() => {}) }
+        this.update(job, { message: 'Saving the song you just played…' })
+      } else artifact = await this.downloadPackageWithVerification(provider.slice(2), id, {
         signal: controller.signal, quality: job.opts.addonQuality,
         onProgress: update => { if (job.packageRunId === runId && !job.stop) this.update(job, { progress: update.percent ?? job.progress, message: update.message || 'Downloading addon audio…' }) },
       }, {

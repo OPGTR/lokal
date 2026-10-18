@@ -13,6 +13,7 @@ import { trackArtURL } from '../onlineTracks'
 import { isStationTrack } from '../radio/stations'
 import Sidebar from './Sidebar'
 import { showToast } from './Toaster'
+import { useAutoKeepStreamed } from '../autoKeep'
 
 function MiniPlayer() {
   const { t } = useTranslation()
@@ -74,6 +75,8 @@ export default function PhoneBar() {
   const nav = useNavigate()
   const loc = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+
+  useAutoKeepStreamed(t)
 
   // Songs that arrive by themselves (the SpotiFLAC sync, the start-up
   // rescan): say so, and refresh the pages showing the library.

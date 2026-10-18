@@ -1590,6 +1590,15 @@ activeCategory === 'data' ? usersTried
           </select>
         </Row>
         )}
+        {api.isAndroid && (
+        <Row label={t("Keep the songs you stream")} desc={t("A song played from a SpotiFLAC addon (For you, Search) is saved to your library after a few seconds of listening, without downloading it twice.")}>
+          <button
+            onClick={() => set('keep_streamed_songs', settings.keep_streamed_songs === '0' ? '1' : '0')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-display uppercase tracking-wider border transition-colors ${settings.keep_streamed_songs !== '0' ? 'bg-accent/20 border-accent/50 text-accent' : 'border-border text-muted hover:text-white'}`}>
+            {settings.keep_streamed_songs !== '0' ? t('On') : t('Off')}
+          </button>
+        </Row>
+        )}
         <Row stacked label={t("Play From")} desc={t("When a song isn't in your library, Lokal looks for it in these, top first. Addons you turn on are added here.")}>
           <PlaybackSourceSettings value={settings.playback_search_order} onChange={value => set('playback_search_order', value)} />
         </Row>

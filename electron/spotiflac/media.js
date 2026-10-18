@@ -154,4 +154,18 @@ async function fileResponse(file,{range,signal,mime='audio/*'}={}){
   const body=handle.createReadStream({start:slice.start,end:slice.end,autoClose:true,signal})
   return new Response(Readable.toWeb(body),{status:slice.status,headers})
 }
-module.exports={prepare,operation,resolve,cached,fileResponse,liveResponse,liveUpdate,rangeOf}
+/**
+ * The cached playback copy of this song, waiting for one being made now
+ * (so "save to library" right after it played doesn't download it twice).
+ */
+async function cachedOrPending(db,key,id){
+  let hit=null
+  try{hit=cached(db,key,id)}catch{return null}
+  if(hit)return hit
+  let hash;try{hash=cacheKey(db,key,id)}catch{return null}
+  const job=[...state(db).values()].find(j=>j.hash===hash&&j.status==='running')
+  if(!job)return null
+  try{await job.promise}catch{}
+  return job.status==='done'?job.result:null
+}
+module.exports={cachedOrPending,prepare,operation,resolve,cached,fileResponse,liveResponse,liveUpdate,rangeOf}

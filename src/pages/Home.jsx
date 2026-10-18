@@ -28,6 +28,7 @@ import ReleasesPanel from '../components/ReleasesPanel'
 import { onlineAlbumPath } from '../onlineBrowse'
 import UnfollowedArtists from '../components/UnfollowedArtists'
 import MadeForYou from '../components/MadeForYou'
+import ForYouMixes from '../components/ForYouMixes'
 import FlowPanel from '../components/FlowPanel'
 import { madeForYou } from '../madeForYou'
 
@@ -546,6 +547,7 @@ function HomeContent({ user }) {
     { label: 'Go to artist', icon: User, onSelect: () => navigate(artistPath(track.artist)) },
   ])
   const localHome = <>
+    {!api.isElectron && <ForYouMixes />}
     {picks.length > 0 && <MadeForYou picks={picks}
       onPlay={index => playQueue(pickTracks, index, madeForYouContext)}
       onContextMenu={openPickMenu} />}

@@ -11,6 +11,15 @@ const mixCache = {
 const CACHE_DURATION_DAILY = 24 * 60 * 60 * 1000 // 24 hours for daily
 const CACHE_DURATION_WEEKLY = 7 * 24 * 60 * 60 * 1000 // 7 days for weekly
 
+// Mixes of songs you don't have yet, from what you listen to (discoverMixes.js).
+router.get('/discover', async (req, res) => {
+  try {
+    const { discoverMixes } = require('../../electron/discoverMixes')
+    const { getStorageDir } = require('../../electron/ipc/db')
+    res.json(await discoverMixes(getDB(), getStorageDir(), String(req.query.userId || 'guest'), { force: req.query.force === '1' }))
+  } catch (error) { res.json({ error: error.message, mixes: [] }) }
+})
+
 router.get('/', (req, res) => {
   const { userId = 'guest' } = req.query
   const db = getDB()

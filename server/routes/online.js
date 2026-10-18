@@ -60,10 +60,11 @@ router.get('/search', async (req, res) => {
 // The sources the search page can switch between: built-in ones, then addons.
 router.get('/providers', (req, res) => {
   sources.addons.refreshManifests(getDB()).catch(() => {})
+  // The Android app can't run yt-dlp, which YouTube and SoundCloud play through.
+  const builtIn = process.env.LOKAL_ANDROID ? [] : [{ id: 'yt', label: 'YouTube Music' }, { id: 'sc', label: 'SoundCloud' }]
   res.json([
-    { id: 'yt', label: 'YouTube Music' },
-    { id: 'sc', label: 'SoundCloud' },
-    ...sources.addons.searchable(getDB()).map(a => ({ id: a.provider, label: a.name, icon: a.icon, addon: true, package: a.kind === 'spotiflac', needsSetup: a.kind === 'spotiflac' && !!a.access && !a.access.ready, filters: a.searchFilters, album: a.resources.includes('album'), artist: a.resources.includes('artist') })),
+    ...builtIn,
+    ...sources.addons.searchable(getDB()).map(a => ({ id: a.provider, addonId: a.id, label: a.name, icon: a.icon, addon: true, package: a.kind === 'spotiflac', needsSetup: a.kind === 'spotiflac' && !!a.access && !a.access.ready, filters: a.searchFilters, album: a.resources.includes('album'), artist: a.resources.includes('artist') })),
   ])
 })
 
