@@ -195,7 +195,7 @@ export default function ProviderConnections({ compact = false, settingsOverride 
         <div>
           <p className="text-sm font-medium text-white">{t("Account connections")}</p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted">
-            {api.isElectron ? t('Lokal keeps provider credentials on this device and uses them only for the selected integration.') : t('Web mode sends provider credentials to the Lokal server, where they remain under that server’s control and are used only for the selected integration.')}
+            {api.isElectron || api.isAndroid ? t('Lokal keeps provider credentials on this device and uses them only for the selected integration.') : t('Web mode sends provider credentials to the Lokal server, where they remain under that server’s control and are used only for the selected integration.')}
           </p>
           {settingsError && <p className="mt-1 text-xs text-red-400">{t(settingsError)} <button type="button" onClick={() => loadSettings(true)} className="text-accent hover:underline">{t("Retry")}</button></p>}
         </div>
@@ -227,7 +227,7 @@ export default function ProviderConnections({ compact = false, settingsOverride 
 
         <AccountCard icon={YoutubeIcon} tint="bg-red-600/10 text-red-300" name="YouTube Music" connected={youtubeConnected}
           note={youtubeState.tone === 'error' ? youtubeState.message : youtubeStatus.error}
-          status={!api.isElectron ? t('Available in the desktop app') : youtubeConnected ? t('Connected') : youtubeAccountReady ? youtubeStatus.error ? t('Needs signing in again') : t('Not verified') : t('Not connected')}>
+          status={api.isAndroid ? t('Not available on Android') : !api.isElectron ? t('Available in the desktop app') : youtubeConnected ? t('Connected') : youtubeAccountReady ? youtubeStatus.error ? t('Needs signing in again') : t('Not verified') : t('Not connected')}>
           {api.isElectron && !youtubeConnected && <ActionButton onClick={signInYouTube} disabled={youtubeAuthorizing}>{youtubeSigningIn ? <RefreshCw size={13} className="animate-spin" /> : <LogIn size={13} />}{t('Sign in')}</ActionButton>}
           {youtubeSigningIn && <ActionButton onClick={() => api.youtubeCancelSignIn()} muted>{t('Cancel')}</ActionButton>}
           {api.isElectron && youtubeAccountReady && !youtubeSigningIn && <ActionButton onClick={verifyYouTube} disabled={youtubeAuthorizing} muted>{t('Verify')}</ActionButton>}
@@ -235,7 +235,7 @@ export default function ProviderConnections({ compact = false, settingsOverride 
         </AccountCard>
 
         <AccountCard icon={Gamepad2} tint="bg-[#5865F2]/15 text-[#8b95f5]" name="Discord" connected={discord.connected} note={t(discord.error)}
-          status={!api.isElectron ? t('Available in the desktop app') : discord.connected ? t('Rich Presence connected') : t('Not connected')}>
+          status={api.isAndroid ? t('Not available on Android') : !api.isElectron ? t('Available in the desktop app') : discord.connected ? t('Rich Presence connected') : t('Not connected')}>
           {api.isElectron && (discord.connected
             ? <ActionButton onClick={disconnectDiscord} disabled={discord.busy} muted>{t('Disconnect')}</ActionButton>
             : <ActionButton onClick={connectDiscord} disabled={discord.busy}>{discord.busy ? <RefreshCw size={13} className="animate-spin" /> : <LogIn size={13} />}{t('Connect')}</ActionButton>)}

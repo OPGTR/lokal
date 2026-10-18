@@ -304,13 +304,13 @@ export default function Onboarding({ isOpen, onComplete }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md py-4"
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-elevated border border-border rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+          className="bg-elevated border border-border rounded-3xl shadow-2xl w-full max-w-lg mx-4 max-h-full overflow-y-auto overscroll-contain"
         >
           <div className="flex items-center gap-1.5 p-4 pb-0">
             {steps.filter(s => !s.isElectron || api.isElectron).map((s, i) => {
@@ -326,7 +326,7 @@ export default function Onboarding({ isOpen, onComplete }) {
             })}
           </div>
 
-          <div className="p-8">
+          <div className="p-6 sm:p-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}

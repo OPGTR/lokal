@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { api } from './api'
+import { isAndroid } from './android'
 
 export const APP_LANGUAGES = [
   { code: 'en', name: 'English' }, { code: 'fr', name: 'Français' }, { code: 'de', name: 'Deutsch' },
@@ -12,6 +13,7 @@ const LOCALES = ['fr', 'de', 'es', 'it', 'pt-BR', 'nl', 'pl', 'sv']
 // itself (artist names, album titles, filenames) is never translated.
 const ROWS = Object.assign({
   // The Android app (phone layout, SpotiFLAC sync).
+  "Not available on Android": ["Indisponible sur Android", "Auf Android nicht verfügbar", "No disponible en Android", "Non disponibile su Android", "Indisponível no Android", "Niet beschikbaar op Android", "Niedostępne na Androidzie", "Inte tillgängligt på Android"],
   "1 new song added to your library.": ["1 nouveau titre ajouté à ta bibliothèque.", "1 neuer Titel zur Mediathek hinzugefügt.", "1 canción nueva añadida a tu biblioteca.", "1 nuovo brano aggiunto alla libreria.", "1 música nova adicionada à biblioteca.", "1 nieuw nummer toegevoegd aan je bibliotheek.", "Dodano 1 nowy utwór do biblioteki.", "1 ny låt har lagts till i biblioteket."],
   "1 new song from SpotiFLAC.": ["1 nouveau titre depuis SpotiFLAC.", "1 neuer Titel von SpotiFLAC.", "1 canción nueva de SpotiFLAC.", "1 nuovo brano da SpotiFLAC.", "1 música nova do SpotiFLAC.", "1 nieuw nummer van SpotiFLAC.", "1 nowy utwór ze SpotiFLAC.", "1 ny låt från SpotiFLAC."],
   "Menu": ["Menu", "Menü", "Menú", "Menu", "Menu", "Menu", "Menu", "Meny"],
@@ -2052,11 +2054,19 @@ const TRANSLATIONS = Object.fromEntries(Object.entries(ROWS).map(([phrase, value
 ]))
 
 const LanguageContext = createContext({ language: 'en', setLanguage: async () => false, t: value => value })
+// The Android app starts in the phone's language (until one is picked).
+function deviceLanguage() {
+  if (!isAndroid) return 'en'
+  const wanted = String(navigator.language || '').toLowerCase()
+  return APP_LANGUAGES.find(item => item.code.toLowerCase() === wanted)?.code
+    || APP_LANGUAGES.find(item => item.code.split('-')[0] === wanted.split('-')[0])?.code
+    || 'en'
+}
 function readStoredLanguage() {
   try {
     const code = localStorage.getItem('lokal-app-language')
-    return APP_LANGUAGES.some(item => item.code === code) ? code : 'en'
-  } catch { return 'en' }
+    return APP_LANGUAGES.some(item => item.code === code) ? code : deviceLanguage()
+  } catch { return deviceLanguage() }
 }
 
 export function LanguageProvider({ children }) {
