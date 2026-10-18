@@ -1,7 +1,7 @@
 {
   "name": "lokal-android",
   "private": true,
-  "version": "9.1.4",
+  "version": "9.1.5",
   "description": "Android build of Lokal: the Lokal server runs on the phone in an embedded Node.js and the Lokal interface plays your phone's music.",
   "scripts": {
     "build:ui": "cd .. && vite build --outDir mobile/build/ui --emptyOutDir",
