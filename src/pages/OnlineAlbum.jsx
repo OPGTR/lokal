@@ -128,7 +128,7 @@ export default function OnlineAlbum() {
   const [zoom, setZoom] = useState(false)
 
   return (
-    <div className="p-6 pb-10">
+    <div className="p-4 @md:p-6 pb-10">
       <button onClick={() => nav(-1)} className="mb-5 inline-flex items-center gap-2 text-xs text-muted transition-colors hover:text-white">
         <ArrowLeft size={14} /> {t('Back')}
       </button>

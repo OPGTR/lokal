@@ -4,7 +4,7 @@
 // follow; songs you listen to are kept in your library (see AutoKeep).
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Play, RefreshCw, Download, Sparkles, X, Loader2, Blocks } from 'lucide-react'
+import { Play, RefreshCw, Download, Sparkles, X, Loader2, Blocks, ShieldCheck } from 'lucide-react'
 import { api } from '../api'
 import { useAppStore, usePlayerStore } from '../store/player'
 import { useTranslation } from '../i18n'
@@ -46,6 +46,55 @@ export default function ForYouMixes() {
   const [open, setOpen] = useState(null)
   const [sources, setSources] = useState(null) // addons that can play, or null while unknown
   const [busy, setBusy] = useState(null)
+  const [installing, setInstalling] = useState(false)
+  const [installError, setInstallError] = useState('')
+
+  const [pending, setPending] = useState([]) // installed addons waiting for their first check
+  const loadSources = () => Promise.resolve(api.onlineProviders?.())
+    .then(list => {
+      const addons = (Array.isArray(list) ? list : []).filter(p => p.addon && p.package)
+      setSources(addons.filter(p => !p.needsSetup))
+      setPending(addons.filter(p => p.needsSetup))
+    })
+    .catch(() => { setSources([]); setPending([]) })
+
+  // An addon that asks for a quick check (a captcha) before its first song.
+  const verify = async (provider) => {
+    setInstalling(true); setInstallError('')
+    try {
+      const key = String(provider.id || '').slice(2)
+      const result = await api.addonsPackages({ action: 'package.verify', key })
+      if (result?.error) throw new Error(result.error)
+      await loadSources()
+    } catch (error) {
+      setInstallError(error?.message || t('Could not check the addon.'))
+    } finally { setInstalling(false) }
+  }
+
+  // One tap: the Deezer addon from the official SpotiFLAC catalogue (the
+  // recommendations come from Deezer's catalogue, so its songs match exactly).
+  const installDeezer = async () => {
+    setInstalling(true); setInstallError('')
+    try {
+      await api.addonsPackages({ action: 'repositories' })
+      const catalogue = await api.addonsPackages({ action: 'catalogue' })
+      const entry = (Array.isArray(catalogue) ? catalogue : []).find(e => e.id === 'deezer')
+      if (!entry) throw new Error(t('The Deezer addon is not in the SpotiFLAC catalogue right now.'))
+      if (!entry.installed) {
+        const result = await api.addonsPackages({ action: 'package.install', repositoryId: entry.repositoryId, id: 'deezer' })
+        if (result?.error) throw new Error(result.error)
+      }
+      // Some sources ask for a quick check (a captcha) before the first download.
+      const key = (await api.addonsList?.().catch(() => []))?.find?.(a => a.id === 'deezer')?.key
+      if (key) {
+        const checked = await api.addonsPackages({ action: 'package.verify', key }).catch(error => ({ error: error.message }))
+        if (checked?.error) setInstallError(t('Installed. Deezer still needs a quick check: {error}', { error: checked.error }))
+      }
+      await loadSources()
+    } catch (error) {
+      setInstallError(error?.message || t('Could not install the addon.'))
+    } finally { setInstalling(false) }
+  }
 
   const load = async (force = false) => {
     setLoading(true)
@@ -55,10 +104,7 @@ export default function ForYouMixes() {
     } finally { setLoading(false) }
   }
   useEffect(() => { load(false) }, [uid])
-  useEffect(() => {
-    Promise.resolve(api.onlineProviders?.()).then(list => setSources((Array.isArray(list) ? list : []).filter(p => p.addon && p.package && !p.needsSetup)))
-      .catch(() => setSources([]))
-  }, [])
+  useEffect(() => { loadSources() }, [])
 
   // With the Deezer addon, a recommended song (from Deezer's catalogue) is
   // that very song: no search, no wrong match. Other addons search for it.
@@ -117,11 +163,31 @@ export default function ForYouMixes() {
       </div>
       {data?.basedOn?.length > 0 && <p className="-mt-2 mb-3 text-xs text-muted">{t('Based on {names}', { names: data.basedOn.slice(0, 3).join(', ') })}</p>}
       {sources && !sources.length && (
-        <button type="button" onClick={() => nav('/settings', { state: { category: 'addons' } })}
-          className="mb-3 flex w-full items-center gap-3 rounded-xl border border-accent/30 bg-accent/10 p-3 text-left">
-          <Blocks size={18} className="flex-shrink-0 text-accent" />
-          <span className="text-xs text-white">{t('To listen to and download these songs, install a SpotiFLAC addon (Deezer, Qobuz, Tidal…) in Settings → Addons.')}</span>
-        </button>
+        <div className="mb-3 rounded-xl border border-accent/30 bg-accent/10 p-3">
+          <div className="flex items-start gap-3">
+            <Blocks size={18} className="mt-0.5 flex-shrink-0 text-accent" />
+            <p className="text-xs text-white">{pending.length
+              ? t('{name} is installed. It asks for a quick check (a captcha) once before the first download.', { name: (pending.find(p => p.addonId === 'deezer') || pending[0]).label })
+              : t('To listen to and download these songs, Lokal needs a SpotiFLAC addon. Deezer matches these recommendations exactly.')}</p>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {pending.length ? (
+              <button type="button" onClick={() => verify(pending.find(p => p.addonId === 'deezer') || pending[0])} disabled={installing}
+                className="flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-xs font-medium text-base disabled:opacity-60">
+                {installing ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />} {t('Check access to {name}', { name: (pending.find(p => p.addonId === 'deezer') || pending[0]).label })}
+              </button>
+            ) : (
+              <button type="button" onClick={installDeezer} disabled={installing}
+                className="flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-xs font-medium text-base disabled:opacity-60">
+                {installing ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {installing ? t('Installing…') : t('Install the Deezer addon')}
+              </button>
+            )}
+            <button type="button" onClick={() => nav('/settings', { state: { category: 'addons' } })} className="rounded-full border border-border px-4 py-2 text-xs text-white">
+              {t('Other addons')}
+            </button>
+          </div>
+          {installError && <p className="mt-2 text-xs text-red-300">{installError}</p>}
+        </div>
       )}
       {data?.error && !mixes.length && <p className="text-xs text-muted">{t('Recommendations need an Internet connection.')}</p>}
       {loading && !mixes.length && (

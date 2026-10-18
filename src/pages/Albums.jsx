@@ -409,7 +409,7 @@ export default function Albums() {
   }
 
   return (
-    <div className="min-h-full p-6 pb-10">
+    <div className="min-h-full p-4 @md:p-6 pb-10">
       <div className="mx-auto max-w-7xl space-y-8">
         {/* An open album has its own page: no collection header above it. */}
         {!selectedAlbum && <>

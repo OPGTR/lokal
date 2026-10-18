@@ -28,7 +28,7 @@ export function trackColumnPreferences(saved, showQuality = false, playlist = fa
   return result
 }
 
-export function trackColumnLayout(width, columns, { playlist = false, actionSlots = 0, likedTrack = false, extraColumns = [] } = {}) {
+export function trackColumnLayout(width, columns, { playlist = false, actionSlots = 0, likedTrack = false, extraColumns = [], album = true } = {}) {
   const visible = {}
   // Padding, a readable Title, and the always-reachable More menu.
   let remaining = width - 2 - 11 - 1.25 - 0.5 - (likedTrack ? 1.25 : 0)
@@ -40,7 +40,7 @@ export function trackColumnLayout(width, columns, { playlist = false, actionSlot
   fit('quality', 4.5, columns.quality)
   fit('source', 2, columns.source)
   for (const column of extraColumns) fit(column.key, column.width || 5.5)
-  fit('album', 8)
+  fit('album', 8, album)
   fit('time', 3, columns.time)
   fit('number', 2, columns.number)
   fit('added', 5.5, columns.added)

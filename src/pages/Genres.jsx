@@ -97,7 +97,7 @@ export default function Genres() {
   }
 
   return (
-    <div className="min-h-full p-6 pb-10">
+    <div className="min-h-full p-4 @md:p-6 pb-10">
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="flex flex-col gap-4 @md:flex-row @md:items-end @md:justify-between">
           <div>
@@ -173,7 +173,7 @@ export function GenreTracks() {
   }
 
   return (
-    <div className="min-h-full p-6 pb-10 space-y-6">
+    <div className="min-h-full p-4 @md:p-6 pb-10 space-y-6">
       <button type="button" onClick={() => navigate('/genres')}
         className="inline-flex items-center gap-2 text-sm text-muted transition-colors hover:text-white">
         <ArrowLeft size={16} />{t('Back to Genres')}

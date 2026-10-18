@@ -358,6 +358,7 @@ function AnimatedRoutes() {
 export default function App() {
   // Narrow screen / the Android app: bottom bar instead of the sidebars.
   const phone = usePhoneLayout()
+  useEffect(() => { document.documentElement.classList.toggle('lokal-phone', phone) }, [phone])
   useEffect(() => api.onLibraryChanged?.(() => {
     window.dispatchEvent(new Event('lokal:refresh'))
   }), [])

@@ -21,6 +21,7 @@ import DeleteTracksDialog from './DeleteTracksDialog'
 import { useSelection } from '../selection'
 import { addToPlaylistMany, addToQueueMany, libraryTracks, playNextMany } from '../trackActions'
 import { trackColumnLayout, trackColumnPreferences } from '../trackColumns'
+import { usePhoneLayout } from '../phoneLayout'
 import { useTrackColumnsStore } from '../store/trackColumns'
 import TrackColumnPicker from './TrackColumnPicker'
 import { TrackSourceIcon } from './SourceIcon'
@@ -115,7 +116,11 @@ export default function TrackList({ tracks = [], showQuality = false, onRemove =
   const savedColumns = useTrackColumnsStore(state => state.profiles[profile])
   const setColumn = useTrackColumnsStore(state => state.setColumn)
   const resetColumns = useTrackColumnsStore(state => state.resetColumns)
-  const columns = trackColumnPreferences(savedColumns, showQuality, !!playlistId || !!onSortChange)
+  const phone = usePhoneLayout()
+  // Phone: artwork, title and artist, the More button; no table columns.
+  const columns = phone
+    ? { ...trackColumnPreferences(savedColumns, showQuality, !!playlistId || !!onSortChange), number: false, artwork: true, artist: true, source: false, quality: false, added: false, time: false, actions: false, grip: false }
+    : trackColumnPreferences(savedColumns, showQuality, !!playlistId || !!onSortChange)
   const listRef = useRef(null)
   const [listWidth, setListWidth] = useState(0)
   useLayoutEffect(() => {
@@ -173,7 +178,7 @@ export default function TrackList({ tracks = [], showQuality = false, onRemove =
   const anyStreamed = useMemo(() => tracks.some(t => isStreamed(t)), [tracks])
   const anyLiked = useMemo(() => tracks.some(track => likedIds.has(track.id)), [tracks, likedIds])
   const actionSlots = (showPlayNext ? 1 : 0) + (anyStreamed || resolveTracks ? 1 : 0) + (showAddToQueue ? 1 : 0) + (onQuickAdd ? 1 : 0) + 4
-  const layout = trackColumnLayout(listWidth, columns, { playlist: !!playlistId && !!onReorder, actionSlots, likedTrack: anyLiked, extraColumns })
+  const layout = trackColumnLayout(listWidth, columns, { playlist: !!playlistId && !!onReorder, actionSlots, likedTrack: anyLiked, extraColumns: phone ? [] : extraColumns, album: !phone })
   const mergedTracks = tracks.map(track => trackOverrides[track.id] ? { ...track, ...trackOverrides[track.id] } : track)
   const navigate = useNavigate()
   const menu = useContextMenu()
@@ -525,6 +530,10 @@ export default function TrackList({ tracks = [], showQuality = false, onRemove =
   // doesn't, so songs aren't selected by accident. Double click plays.
   const handleTrackClick = (track, e) => {
     e.stopPropagation()
+    // Phone: a tap plays (a long press opens the menu); while songs are
+    // selected, a tap adds or removes one.
+    if (phone && !selectedIds.size) { handlePlay(track, e); return }
+    if (phone) { selection.click(track.id, { ctrlKey: true, metaKey: true, shiftKey: false }); return }
     selection.click(track.id, e)
   }
 
@@ -813,12 +822,12 @@ export default function TrackList({ tracks = [], showQuality = false, onRemove =
         ]}
       />
 
-      <div className="mb-1 flex items-center justify-between gap-3 px-2">
+      <div className={`mb-1 flex items-center justify-between gap-3 px-2 ${phone && !toolbarStart ? 'hidden' : ''}`}>
         {toolbarStart || <span />}
-        <TrackColumnPicker columns={columns} playlist={!!playlistId}
-          onChange={(key, value) => setColumn(profile, key, value)} onReset={() => resetColumns(profile)} />
+        {!phone && <TrackColumnPicker columns={columns} playlist={!!playlistId}
+          onChange={(key, value) => setColumn(profile, key, value)} onReset={() => resetColumns(profile)} />}
       </div>
-      <div data-track-header className="grid grid-cols-[var(--tl-columns)] items-center gap-2 px-4 py-1.5 text-xs text-muted uppercase tracking-widest border-b border-border font-display mb-0.5">
+      <div data-track-header className={`${phone ? 'hidden' : ''} grid grid-cols-[var(--tl-columns)] items-center gap-2 px-4 py-1.5 text-xs text-muted uppercase tracking-widest border-b border-border font-display mb-0.5`}>
         {layout.grip && <span />}
         {layout.number && <SortableHeader column="number" label={t("playlist number")} sort={sort} onSortChange={onSortChange} className="justify-center text-center">#</SortableHeader>}
         <span>{t(layout.album ? 'Title' : 'Title / Album')}</span>
@@ -876,7 +885,7 @@ export default function TrackList({ tracks = [], showQuality = false, onRemove =
             onContextMenu={(e) => openTrackMenu(e, track)}
             aria-selected={isSelected}
             style={isHighlighted ? undefined : { contentVisibility: 'auto', containIntrinsicSize: `${rowContentHeight}px` }}
-            className={`grid grid-cols-[var(--tl-columns)] gap-2 px-4 py-1.5 rounded-lg items-center cursor-default group transition-colors ${isCurrent ? 'bg-accent/8' : 'hover:bg-elevated'} ${isSelected ? 'bg-accent/15' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-t-2 border-accent' : ''} ${isGhost ? 'opacity-75' : ''} ${isFlashing ? 'ring-2 ring-accent bg-accent/15 animate-pulse' : ''}`}
+            className={`grid grid-cols-[var(--tl-columns)] gap-2 ${phone ? 'px-2 py-2 active:bg-elevated' : 'px-4 py-1.5'} rounded-lg items-center cursor-default group transition-colors ${isCurrent ? 'bg-accent/8' : 'hover:bg-elevated'} ${isSelected ? 'bg-accent/15' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-t-2 border-accent' : ''} ${isGhost ? 'opacity-75' : ''} ${isFlashing ? 'ring-2 ring-accent bg-accent/15 animate-pulse' : ''}`}
           >
             {layout.grip && (
               <div className="flex items-center justify-center text-muted opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing">
@@ -897,7 +906,7 @@ export default function TrackList({ tracks = [], showQuality = false, onRemove =
             </div>}
 
             <div className="min-w-0 flex items-center gap-2.5">
-              {columns.artwork ? <div className="w-8 h-8 rounded flex-shrink-0 overflow-hidden bg-card relative">
+              {columns.artwork ? <div className={`${phone ? 'w-12 h-12 rounded-md' : 'w-8 h-8 rounded'} flex-shrink-0 overflow-hidden bg-card relative`}>
                 {resolveTracks ? <DiscoveryImage item={track} src={src} className="w-full h-full object-cover" /> : src ? <img src={src} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" /> : <div className="w-full h-full flex items-center justify-center text-muted"><Music size={11} /></div>}
                 {!layout.number && <button onClick={e => handlePlay(track, e)} aria-label={`${isCurrent && isPlaying ? 'Pause' : 'Play'} ${track.title}`}
                   className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 text-white">
@@ -917,7 +926,7 @@ export default function TrackList({ tracks = [], showQuality = false, onRemove =
                     next column. */}
                 <div className="flex items-center gap-2 min-w-0 overflow-hidden">
                   {columns.source && !layout.source && <TrackSourceIcon track={track} addonNames={addonNames} />}
-                  <p title={track.title} className={`min-w-0 text-sm font-medium truncate ${isCurrent ? 'text-accent' : 'text-white'}`}>{track.title}</p>
+                  <p title={track.title} className={`min-w-0 ${phone ? 'text-[15px]' : 'text-sm'} font-medium truncate ${isCurrent ? 'text-accent' : 'text-white'}`}>{track.title}</p>
                   {!!track.explicit && <span className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] leading-[14px] font-display uppercase tracking-wide text-muted flex-shrink-0">E</span>}
                   {isMissing && <span className="px-1.5 py-0.5 rounded-full bg-red-400/10 border border-red-400/20 text-[10px] leading-[14px] uppercase tracking-wide text-red-200 flex-shrink-0">{t("Missing file")}</span>}
                   {!isMissing && isGhost && <span className="px-1.5 py-0.5 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-[10px] leading-[14px] uppercase tracking-wide text-yellow-200 flex-shrink-0">{t("Ghost")}</span>}
@@ -929,9 +938,9 @@ export default function TrackList({ tracks = [], showQuality = false, onRemove =
                       </button>
                     : <span title={track.playback_error} className="px-1.5 py-0.5 rounded-full bg-red-400/10 border border-red-400/20 text-[10px] leading-[14px] uppercase tracking-wide text-red-200 flex-shrink-0">{t("Can't play")}</span>)}
                 </div>
-                <div className="flex min-w-0 items-center text-xs text-muted leading-4 h-4">
+                <div className={`flex min-w-0 items-center ${phone ? 'text-[13px] leading-5 h-5' : 'text-xs leading-4 h-4'} text-muted`}>
                   {columns.artist && <span className="min-w-0 flex-1 truncate" title={track.artist}>{track.artist}</span>}
-                  {!layout.album && <>
+                  {!layout.album && !phone && <>
                     {columns.artist && track.artist && <span className="mx-1 shrink-0">·</span>}
                     <span data-inline-album className="min-w-0 flex-1 truncate" title={track.album || t('Unknown album')}>{track.album || t('Unknown album')}</span>
                   </>}

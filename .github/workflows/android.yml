@@ -66,6 +66,13 @@ jobs:
           tar xzf "$RUNNER_TEMP/node-linux-x64-18.20.4.tgz" -C "$RUNNER_TEMP"
           node scripts/smoke-test.mjs "$RUNNER_TEMP/music" "$RUNNER_TEMP/package/bin/node"
 
+      - name: For you + SpotiFLAC with the real network (report)
+        working-directory: mobile
+        continue-on-error: true
+        run: |
+          node -r ./scripts/simulate-android.cjs -r ./backend/polyfills.js scripts/discover-mixes.test.cjs
+          node scripts/network-check.mjs "$RUNNER_TEMP/music" "$RUNNER_TEMP/package/bin/node"
+
       - name: Version
         run: |
           version=$(node -p "require('./mobile/package.json').version")

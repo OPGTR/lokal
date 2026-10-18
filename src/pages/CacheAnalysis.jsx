@@ -175,7 +175,7 @@ export default function CacheAnalysis() {
   const estimate = mode => (report?.cleanup && !running ? ` · ~${bytes(report.cleanup[mode])}` : '')
 
   return (
-    <div className="w-full space-y-6 px-6 pb-12 pt-6">
+    <div className="w-full space-y-6 px-4 @md:px-6 pb-12 pt-6">
       <Modal open={!!confirm} onClose={() => setConfirm(null)} title={dialog ? t(dialog.title) : ''} width="max-w-md">
         {dialog && (
           <div className="space-y-4 text-sm">

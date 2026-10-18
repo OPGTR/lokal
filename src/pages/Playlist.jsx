@@ -284,7 +284,7 @@ export default function Playlist() {
   }
 
   return (
-    <div className="p-6 pb-10">
+    <div className="p-4 @md:p-6 pb-10">
       <div className="flex items-end gap-4 mb-4">
         <div className="relative w-28 h-28 flex-shrink-0 group">
           <div className="w-28 h-28 rounded-2xl overflow-hidden bg-elevated border border-border flex items-center justify-center shadow-xl">

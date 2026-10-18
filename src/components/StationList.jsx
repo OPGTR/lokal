@@ -10,6 +10,7 @@ import { useRadioStore } from '../store/radio'
 import { useStationColumnsStore } from '../store/stationColumns'
 import { RADIO_CONTEXT, stationTrack } from '../radio/stations'
 import { MAX_FIXED_WIDTH } from '../trackColumns'
+import { usePhoneLayout } from '../phoneLayout'
 import { STATION_ALWAYS_SHOWN, STATION_COLUMN_DEFS, STATION_OTHER_OPTIONS, stationColumnLayout, stationColumnPreferences } from '../radio/stationColumns'
 import { useAppearanceFlag, useAppearanceValue } from '../appearanceFlags'
 import { useTranslation } from '../i18n'
@@ -62,6 +63,7 @@ export default function StationList({ catalog, configUrl = '', toolbarStart = nu
   }
   const { user } = useAppStore()
   const profile = String(user?.id || 'guest')
+  const phone = usePhoneLayout()
   const saved = useStationColumnsStore(s => s.profiles[profile])
   const setColumn = useStationColumnsStore(s => s.setColumn)
   const resetColumns = useStationColumnsStore(s => s.resetColumns)
@@ -191,14 +193,14 @@ export default function StationList({ catalog, configUrl = '', toolbarStart = nu
                 <ExternalLink size={14} /> {t('Open config')}
               </button>
             )}
-            <TrackColumnPicker columns={columns}
+            {!phone && <TrackColumnPicker columns={columns}
               onChange={(key, value) => setColumn(profile, key, value)} onReset={() => resetColumns(profile)}
               defs={STATION_COLUMN_DEFS} alwaysShown={STATION_ALWAYS_SHOWN} otherOptions={STATION_OTHER_OPTIONS}
               buttonLabel="Edit station list columns" panelLabel="Station list columns" heading="Show in the station list"
-              note="Saved for the station list in this profile. Drag a column's edge in the header to resize it. Stations keep the catalogue's order." />
+              note="Saved for the station list in this profile. Drag a column's edge in the header to resize it. Stations keep the catalogue's order." />}
           </div>
         </div>
-        <div data-station-header className="grid grid-cols-[var(--st-columns)] items-center gap-2 pl-1 pr-4 py-1.5 text-xs text-muted uppercase tracking-widest border-b border-border font-display mb-0.5">
+        <div data-station-header className={`${phone ? 'hidden' : ''} grid grid-cols-[var(--st-columns)] items-center gap-2 pl-1 pr-4 py-1.5 text-xs text-muted uppercase tracking-widest border-b border-border font-display mb-0.5`}>
           {layout.order.map(key => (
             <div key={key} data-col={key} className="relative grid min-w-0 items-center">
               {headerLabel(key)}

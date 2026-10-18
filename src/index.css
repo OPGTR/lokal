@@ -346,3 +346,13 @@ html.performance-mode *::after {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+
+/* Rows that scroll sideways by themselves (tabs, filters) without a bar. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Phone layout (phoneLayout.js): the page never scrolls sideways; rows that
+   need to (tabs, filters) scroll inside themselves. */
+.lokal-phone main { overflow-x: hidden; }
+.lokal-phone { -webkit-tap-highlight-color: transparent; }
+.lokal-phone body { overscroll-behavior-y: none; }

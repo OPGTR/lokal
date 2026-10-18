@@ -62,7 +62,7 @@ function Highlighted({ text, typed }) {
 }
 
 /** The header's Home button, search box, history dropdown and Flow button. */
-export default function HeaderSearch() {
+export default function HeaderSearch({ phone = false } = {}) {
   const { t } = useTranslation()
   const nav = useNavigate()
   const loc = useLocation()
@@ -209,18 +209,18 @@ export default function HeaderSearch() {
 
   return (
     <div className="flex items-center gap-1.5 min-w-0 w-full justify-center" style={{ WebkitAppRegion: 'no-drag' }}>
-      <button
+      {!phone && <button
         onClick={() => nav('/')}
         title={t("Home")}
         aria-label={t("Home")}
         className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-elevated hover:bg-card ${onHome ? 'text-text' : 'text-muted hover:text-text'}`}
       >
         <Home size={15} strokeWidth={onHome ? 2.4 : 1.8} />
-      </button>
+      </button>}
 
-      <div className="relative min-w-0" style={{ flex: '0 1 474px' }} data-tour="search">
+      <div className="relative min-w-0" style={{ flex: phone ? '1 1 auto' : '0 1 474px' }} data-tour="search">
         <div
-          className={`group h-7 flex items-center rounded-full bg-elevated border transition-colors ${focused ? 'border-accent/60' : 'border-transparent hover:border-border2 hover:bg-card'}`}
+          className={`group ${phone ? 'h-10' : 'h-7'} flex items-center rounded-full bg-elevated border transition-colors ${focused ? 'border-accent/60' : 'border-transparent hover:border-border2 hover:bg-card'}`}
           onMouseDown={(e) => { if (e.target === e.currentTarget) { e.preventDefault(); inputRef.current?.focus() } }}
         >
           <SearchIcon size={15} className={`ml-3 mr-1.5 flex-shrink-0 ${focused ? 'text-text' : 'text-muted group-hover:text-text'}`} />
@@ -231,13 +231,13 @@ export default function HeaderSearch() {
             onFocus={() => { setFocused(true); setDropdownOpen(true); openSearchPage() }}
             onBlur={() => { setFocused(false); setDropdownOpen(false); if (query.trim().length >= 2 && onSearchPage && !isLink) saveRecentSearch(query) }}
             onKeyDown={onKeyDown}
-            placeholder={t("What do you want to play? Or paste a link")}
+            placeholder={phone ? t("Songs, artists, a link…") : t("What do you want to play? Or paste a link")}
             spellCheck={false}
             aria-label={t("Search, or paste a link to download")}
             aria-expanded={showDropdown}
             aria-controls="header-search-history"
             aria-activedescendant={active >= 0 ? `header-search-history-${active}` : undefined}
-            className="flex-1 min-w-0 bg-transparent outline-none text-[14px] leading-none text-text placeholder:text-muted"
+            className={`flex-1 min-w-0 bg-transparent outline-none ${phone ? 'text-[16px]' : 'text-[14px]'} leading-none text-text placeholder:text-muted`}
           />
           {query && (
             <button

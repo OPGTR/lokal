@@ -235,14 +235,14 @@ export default function Library() {
     : null
 
   return (
-    <div className="p-6 space-y-4 pb-10">
+    <div className="p-4 @md:p-6 space-y-4 pb-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
           <h1 className="font-display text-lg uppercase tracking-widest text-white">{t("Library")}</h1>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="no-scrollbar -mx-4 flex w-[calc(100%+2rem)] flex-nowrap items-center gap-2 overflow-x-auto px-4 @md:mx-0 @md:w-auto @md:flex-wrap @md:justify-end @md:overflow-visible @md:px-0">
           <select value={source} onChange={e => setSource(e.target.value)} aria-label={t("Source")}
-            className="bg-elevated border border-border rounded-lg px-3 py-1.5 text-xs text-muted outline-none focus:border-accent/50">
+            className="flex-shrink-0 bg-elevated border border-border rounded-lg px-3 py-1.5 text-xs text-muted outline-none focus:border-accent/50">
             <option value="all">{t("All sources")}</option>
             <option value="local">{t("Music folder")}</option>
             <option value="yt">{t("YouTube")}</option>
@@ -253,7 +253,7 @@ export default function Library() {
             <option value="errors">{t("Errors")}</option>
           </select>
           <select value={genre} onChange={e => setGenre(e.target.value)} aria-label={t("Genres")}
-            className={`max-w-[11rem] truncate bg-elevated border rounded-lg px-3 py-1.5 text-xs outline-none focus:border-accent/50 ${genre ? 'border-accent/40 text-accent' : 'border-border text-muted'}`}>
+            className={`flex-shrink-0 max-w-[11rem] truncate bg-elevated border rounded-lg px-3 py-1.5 text-xs outline-none focus:border-accent/50 ${genre ? 'border-accent/40 text-accent' : 'border-border text-muted'}`}>
             <option value="">{t("All genres")}</option>
             {genre && !genres.some(g => g.toLowerCase() === genre.toLowerCase()) && <option value={genre}>{genre}</option>}
             {genres.map(g => <option key={g} value={g}>{g}</option>)}
@@ -267,7 +267,7 @@ export default function Library() {
               else { setQuality(''); setFormat('') }
             }}
             aria-label={t("Format and quality")}
-            className={`bg-elevated border rounded-lg px-3 py-1.5 text-xs outline-none focus:border-accent/50 ${quality || format ? 'border-accent/40 text-accent' : 'border-border text-muted'}`}
+            className={`flex-shrink-0 max-w-[12rem] bg-elevated border rounded-lg px-3 py-1.5 text-xs outline-none focus:border-accent/50 ${quality || format ? 'border-accent/40 text-accent' : 'border-border text-muted'}`}
           >
             <option value="">{t("All formats and qualities")}</option>
             <optgroup label={t("Quality")}>
@@ -297,14 +297,14 @@ export default function Library() {
             </optgroup>
           </select>
           <select value={sort} onChange={e => setSort(e.target.value)} aria-label={t("Sort")}
-            className="bg-elevated border border-border rounded-lg px-3 py-1.5 text-xs text-muted outline-none focus:border-accent/50">
+            className="flex-shrink-0 bg-elevated border border-border rounded-lg px-3 py-1.5 text-xs text-muted outline-none focus:border-accent/50">
             <option value="added_at DESC">{t("Recently Added")}</option>
             <option value="title ASC">{t("Title A-Z")}</option>
             <option value="artist ASC">{t("Artist A-Z")}</option>
             <option value="play_count DESC">{t("Most Played")}</option>
             <option value="duration DESC">{t("Longest")}</option>
           </select>
-          <div className="flex bg-elevated border border-border rounded-lg overflow-hidden">
+          <div className="flex flex-shrink-0 bg-elevated border border-border rounded-lg overflow-hidden">
             <button onClick={() => setView('list')} aria-label={t("List view")} className={`p-1.5 transition-colors ${view === 'list' ? 'bg-accent/20 text-accent' : 'text-muted hover:text-white'}`}><List size={14} /></button>
             <button onClick={() => setView('grid')} aria-label={t("Grid view")} className={`p-1.5 transition-colors ${view === 'grid' ? 'bg-accent/20 text-accent' : 'text-muted hover:text-white'}`}><LayoutGrid size={14} /></button>
           </div>
@@ -312,7 +312,7 @@ export default function Library() {
       </div>
 
       <ScanBanner />
-      {api.isAndroid && <div className="mt-3"><SpotiflacSync /></div>}
+      {api.isAndroid && <div className="mt-3"><SpotiflacSync compact /></div>}
 
       <div className="flex flex-col items-start gap-3">
         <div className="flex w-full flex-wrap items-center justify-between gap-3">
@@ -329,15 +329,15 @@ export default function Library() {
                     : `${folderData.totalTracks != null ? folderData.totalTracks : (folderData.tracks?.length || 0)} ${(folderData.totalTracks != null ? folderData.totalTracks : (folderData.tracks?.length || 0)) === 1 ? t('track') : t('tracks')} · ${folderData.relativePath || folderData.rootName}`)
                 : t('Browse your music folders')}
           </p>
-          <div className="ml-auto flex min-w-0 items-center gap-2">
+          <div className="ml-auto flex min-w-0 items-center gap-2 w-full @md:w-auto">
             {api.canPickFolders && (
               <button type="button" onClick={addMusicFolder} disabled={addingMusicFolder}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-elevated px-3 py-1.5 text-xs text-muted transition-colors hover:text-white disabled:opacity-50">
                 {addingMusicFolder ? <Loader2 size={13} className="animate-spin" /> : <FolderPlus size={13} />}
-                {addingMusicFolder ? t('Adding folder…') : t('Add music folder')}
+                <span className="hidden @sm:inline">{addingMusicFolder ? t('Adding folder…') : t('Add music folder')}</span>
               </button>
             )}
-            <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-elevated px-3 py-1.5 text-xs text-white">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-elevated px-3 py-1.5 text-xs text-white @md:flex-none">
               <Search size={14} className="flex-shrink-0 text-muted" />
               <input
                 type="text"
@@ -346,7 +346,7 @@ export default function Library() {
                 onKeyDown={e => { if (e.key === 'Escape') { if (libraryMode === 'simple') setSimpleSearch(''); else setFolderSearch('') } }}
                 placeholder={libraryMode === 'simple' ? t("Search tracks…") : t("Search folders & tracks…")}
                 aria-label={libraryMode === 'simple' ? t("Search tracks") : t("Search folders and tracks")}
-                className="w-36 bg-transparent text-xs text-white outline-none placeholder:text-muted focus:w-48 transition-all @sm:w-44"
+                className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-muted @md:w-44 @md:flex-none @md:text-xs @md:focus:w-48 transition-all"
               />
               {(libraryMode === 'simple' ? simpleSearch : folderSearch) && (
                 <button

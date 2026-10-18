@@ -335,7 +335,7 @@ export default function Artists() {
     : 'grid grid-cols-3 gap-4 @sm:grid-cols-4 @md:grid-cols-6 @lg:grid-cols-8'
 
   return (
-    <div className="min-h-full p-6 pb-10">
+    <div className="min-h-full p-4 @md:p-6 pb-10">
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="flex flex-col gap-4 @md:flex-row @md:flex-wrap @md:items-end @md:justify-between">
           <div>

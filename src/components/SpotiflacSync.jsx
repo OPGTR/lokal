@@ -14,7 +14,11 @@ export async function openSpotiflacApp(t) {
   try { await api.openApp(SPOTIFLAC_PACKAGE) } catch { showToast(t("The SpotiFLAC app isn't installed on this phone.")) }
 }
 
-export default function SpotiflacSync() {
+/**
+ * `compact`: once a folder is set, one line (Library page); tapping it shows
+ * the whole card.
+ */
+export default function SpotiflacSync({ compact = false } = {}) {
   const { t } = useTranslation()
   const [folder, setFolder] = useState('')
   const [installed, setInstalled] = useState(null)
@@ -64,6 +68,27 @@ export default function SpotiflacSync() {
     await api.saveSettings({ spotiflac_sync_folder: '' })
     setFolder('')
     setMessage(t('Sync turned off. Songs already in your library stay there.'))
+  }
+
+  const [expanded, setExpanded] = useState(false)
+  if (compact && folder && !expanded) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-elevated px-3 py-2.5">
+        <FolderSync size={16} className="flex-shrink-0 text-accent" />
+        <button type="button" onClick={() => setExpanded(true)} className="min-w-0 flex-1 text-left">
+          <span className="block truncate text-sm text-white">{t('SpotiFLAC sync is on')}</span>
+          <span className="block truncate text-xs text-muted">{message || folder}</span>
+        </button>
+        <button type="button" onClick={() => syncNow(true)} disabled={busy} aria-label={t('Sync now')} className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-muted disabled:opacity-50">
+          {busy ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+        </button>
+        {installed !== false && (
+          <button type="button" onClick={() => openSpotiflacApp(t)} className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-base">
+            <ExternalLink size={13} /> SpotiFLAC
+          </button>
+        )}
+      </div>
+    )
   }
 
   return (

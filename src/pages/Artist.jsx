@@ -243,11 +243,11 @@ export default function Artist() {
         </button>
         {imgSrc ? <img src={imgSrc} className="h-full w-full object-cover opacity-40" /> : <div className="h-full w-full bg-gradient-to-b from-accent/8 to-transparent" />}
         <div className="absolute inset-0 bg-gradient-to-t from-base via-base/20" />
-        <div className="absolute bottom-5 left-8 flex items-end gap-5">
+        <div className="absolute bottom-5 left-4 right-4 flex items-end gap-4 @md:left-8 @md:right-auto @md:gap-5">
           {/* Click: the picture, big (no picture: choose one). The camera
               in the corner changes it. */}
           <div className="relative group flex-shrink-0">
-          <button onClick={imgSrc ? () => setZoom(true) : pickArtistImage} title={imgSrc ? t('View the picture') : api.isElectron ? t('Choose a picture') : undefined} className={`flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-elevated ${imgSrc ? 'cursor-zoom-in' : ''}`}>
+          <button onClick={imgSrc ? () => setZoom(true) : pickArtistImage} title={imgSrc ? t('View the picture') : api.isElectron ? t('Choose a picture') : undefined} className={`flex h-20 w-20 @md:h-24 @md:w-24 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-elevated ${imgSrc ? 'cursor-zoom-in' : ''}`}>
               {imgSrc ? <img src={imgSrc} alt={artist.name} className="h-full w-full object-cover" /> : <Music size={36} className="text-muted" />}
             </button>
             {api.isElectron && imgSrc && (
@@ -257,9 +257,9 @@ export default function Artist() {
             )}
             <ImageZoom src={imgSrc} alt={artist.name} open={zoom} onClose={() => setZoom(false)} />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="mb-1 text-xs font-display uppercase tracking-widest text-muted">{t("Artist")}</p>
-            <h1 className="text-3xl font-display text-white">{artist.name}</h1>
+            <h1 className="break-words text-2xl @md:text-3xl font-display text-white">{artist.name}</h1>
             <p className="mt-1 text-xs text-muted">{t((artist.tracks?.length || 0) === 1 ? '{count} track' : '{count} tracks', { count: artist.tracks?.length || 0 })}</p>
           </div>
         </div>
@@ -269,8 +269,9 @@ export default function Artist() {
         <FollowArtistButton name={artist.name} className="absolute top-14 right-6 flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/50 px-3 py-1.5 text-xs text-white/60 transition-all hover:border-white/20 hover:text-white" />
       </div>
 
-      <div className="space-y-7 px-8 py-5">
-        <div className="flex items-center gap-3">
+      <div className="space-y-7 px-4 py-5 @md:px-8">
+        {/* Narrow pages: the buttons scroll sideways in their own row. */}
+        <div className="no-scrollbar -mx-4 flex items-center gap-3 overflow-x-auto px-4 @md:mx-0 @md:flex-wrap @md:overflow-visible @md:px-0 [&>button]:flex-shrink-0 [&>button]:whitespace-nowrap">
           <button onClick={() => playQueue(artist.tracks, 0, artistContext)} className="flex items-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-medium text-base transition-colors hover:bg-accent-dim">
             <Play size={14} fill="currentColor" className="translate-x-px" /> {t('Play all')}
           </button>

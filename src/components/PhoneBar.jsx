@@ -13,6 +13,8 @@ import { trackArtURL } from '../onlineTracks'
 import { isStationTrack } from '../radio/stations'
 import Sidebar from './Sidebar'
 import { showToast } from './Toaster'
+import { onNative } from '../android'
+import { useSearchStore } from '../store/search'
 import { useAutoKeepStreamed } from '../autoKeep'
 
 function MiniPlayer() {
@@ -89,6 +91,11 @@ export default function PhoneBar() {
     })
   }, [t])
 
+  // The app can open a page (and the tests use it).
+  useEffect(() => onNative('navigate', (path) => {
+    if (typeof path === 'string' && path.startsWith('/')) nav(path)
+  }), [nav])
+
   // Any navigation (a page picked in the menu) closes the menu.
   useEffect(() => { setMenuOpen(false) }, [loc.pathname])
   // The back button closes it (android.js sends Escape to what's open).
@@ -102,7 +109,7 @@ export default function PhoneBar() {
   const path = loc.pathname
   const tabs = [
     { icon: Home, label: 'Home', active: path === '/' || path.startsWith('/home/'), go: () => nav('/') },
-    { icon: Search, label: 'Search', active: path === '/search', go: () => nav('/search') },
+    { icon: Search, label: 'Search', active: path === '/search', go: () => { nav('/search'); setTimeout(() => useSearchStore.getState().requestFocus(), 60) } },
     { icon: Library, label: 'Library', active: path === '/library', go: () => nav('/library') },
     { icon: Menu, label: 'Menu', active: menuOpen, go: () => setMenuOpen(v => !v) },
   ]
